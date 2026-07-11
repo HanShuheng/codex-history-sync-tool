@@ -67,11 +67,48 @@ else
   codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP"
-DMG_ROOT="$(mktemp -d)"
-trap 'rm -rf "$DMG_ROOT"' EXIT
+DMG_WORK="$(mktemp -d)"
+DMG_ROOT="$DMG_WORK/root"
+RW_ARCHIVE="$DMG_WORK/$APP_NAME.rw.dmg"
+ATTACH_PLIST="$DMG_WORK/attach.plist"
+VOLUME_NAME="$APP_NAME $APP_VERSION"
+MOUNT_POINT=""
+cleanup() {
+  [[ -z "$MOUNT_POINT" ]] || hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true
+  rm -rf "$DMG_WORK"
+}
+trap cleanup EXIT
+mkdir -p "$DMG_ROOT"
 cp -R "$APP" "$DMG_ROOT/"
 ln -s /Applications "$DMG_ROOT/Applications"
-hdiutil create -volname "$APP_NAME $APP_VERSION" -srcfolder "$DMG_ROOT" -ov -format UDZO "$ARCHIVE"
+hdiutil create -volname "$VOLUME_NAME" -srcfolder "$DMG_ROOT" -ov -format UDRW "$RW_ARCHIVE"
+hdiutil attach -plist "$RW_ARCHIVE" -nobrowse -noautoopen > "$ATTACH_PLIST"
+for index in 0 1 2 3 4; do
+  MOUNT_POINT="$(/usr/libexec/PlistBuddy -c "Print :system-entities:$index:mount-point" "$ATTACH_PLIST" 2>/dev/null || true)"
+  [[ -n "$MOUNT_POINT" ]] && break
+done
+[[ -n "$MOUNT_POINT" ]] || { echo "无法找到 DMG 挂载点。" >&2; exit 2; }
+osascript <<APPLESCRIPT
+tell application "Finder"
+  tell disk "$VOLUME_NAME"
+    open
+    delay 1
+    set current view of container window to icon view
+    set toolbar visible of container window to false
+    set statusbar visible of container window to false
+    set bounds of container window to {100, 100, 900, 600}
+    set viewOptions to icon view options of container window
+    set arrangement of viewOptions to not arranged
+    set icon size of viewOptions to 128
+    set position of item "$APP_NAME.app" to {220, 260}
+    set position of item "Applications" to {680, 260}
+    close container window
+  end tell
+end tell
+APPLESCRIPT
+hdiutil detach "$MOUNT_POINT" -quiet
+MOUNT_POINT=""
+hdiutil convert "$RW_ARCHIVE" -format UDZO -o "$ARCHIVE" -ov >/dev/null
 
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then
   [[ "$SIGNING_IDENTITY" != "-" ]] || { echo "公证需要 SIGNING_IDENTITY。" >&2; exit 2; }
