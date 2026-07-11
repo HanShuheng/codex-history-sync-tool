@@ -4,7 +4,6 @@ struct AccountsView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @ObservedObject var store: AccountStore
     @State private var showImport = false
-    @State private var showSwitchSheet = false
     @State private var pendingSwitch: AccountRecord?
     @State private var autoSyncAfterSwitch = false
 
@@ -44,7 +43,6 @@ struct AccountsView: View {
                     Button {
                         pendingSwitch = account
                         autoSyncAfterSwitch = store.autoSyncAfterAccountSwitch
-                        showSwitchSheet = true
                     } label: {
                         Label(localization.text("accounts.switch"), systemImage: "arrow.triangle.2.circlepath")
                     }
@@ -59,20 +57,18 @@ struct AccountsView: View {
             Button(localization.text("common.cancel"), role: .cancel) {}
             Button(localization.text("accounts.import")) { store.importCurrent() }
         } message: { Text(localization.text("accounts.importMessage")) }
-        .sheet(isPresented: $showSwitchSheet) {
-            if let pendingSwitch {
-                SwitchAccountSheet(account: pendingSwitch, autoSync: Binding(
-                    get: { autoSyncAfterSwitch },
-                    set: {
-                        autoSyncAfterSwitch = $0
-                        store.setAutoSyncAfterAccountSwitch($0)
-                    }
-                )) {
-                    showSwitchSheet = false
-                } confirm: {
-                    showSwitchSheet = false
-                    store.switchTo(pendingSwitch, autoSync: autoSyncAfterSwitch)
+        .sheet(item: $pendingSwitch) { account in
+            SwitchAccountSheet(account: account, autoSync: Binding(
+                get: { autoSyncAfterSwitch },
+                set: {
+                    autoSyncAfterSwitch = $0
+                    store.setAutoSyncAfterAccountSwitch($0)
                 }
+            )) {
+                pendingSwitch = nil
+            } confirm: {
+                pendingSwitch = nil
+                store.switchTo(account, autoSync: autoSyncAfterSwitch)
             }
         }
         .alert(localization.text("error.title"), isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
