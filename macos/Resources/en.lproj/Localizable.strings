@@ -26,7 +26,7 @@
 "accounts.column.status" = "Status";
 "accounts.column.action" = "Action";
 "accounts.importTitle" = "Import the current Codex account?";
-"accounts.importMessage" = "Read ~/.codex/auth.json and save the credentials in the macOS Keychain.";
+"accounts.importMessage" = "Read ~/.codex/auth.json and save the credentials in ~/.codexhistorysync/config.json.";
 "accounts.switchTitle" = "Switch the Codex account?";
 "accounts.switchMessage" = "The current auth.json will be backed up first. Restart Codex after switching.";
 "accounts.done" = "Account operation complete";

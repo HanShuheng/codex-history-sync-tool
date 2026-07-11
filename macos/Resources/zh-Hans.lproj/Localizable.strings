@@ -26,7 +26,7 @@
 "accounts.column.status" = "状态";
 "accounts.column.action" = "操作";
 "accounts.importTitle" = "导入当前 Codex 账号？";
-"accounts.importMessage" = "将读取 ~/.codex/auth.json，并把登录凭据安全保存到 macOS 钥匙串。";
+"accounts.importMessage" = "将读取 ~/.codex/auth.json，并把登录凭据保存到 ~/.codexhistorysync/config.json。";
 "accounts.switchTitle" = "切换 Codex 账号？";
 "accounts.switchMessage" = "切换前会备份当前 auth.json；切换后请重启 Codex 使新登录态生效。";
 "accounts.done" = "账号操作完成";

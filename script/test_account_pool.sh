@@ -6,9 +6,12 @@ cd "$ROOT"
 mkdir -p .build
 swiftc -parse-as-library \
   macos/Models/AccountModels.swift \
+  macos/Models/AppPaths.swift \
+  macos/Models/LocalConfig.swift \
   macos/Services/AccountServiceError.swift \
   macos/Services/AccountUsageParser.swift \
   macos/Services/CodexAuthFile.swift \
+  macos/Services/LocalConfigStore.swift \
   macos/Services/OAuthCallbackGate.swift \
   tests/account_pool_check.swift \
   -o .build/account-pool-check

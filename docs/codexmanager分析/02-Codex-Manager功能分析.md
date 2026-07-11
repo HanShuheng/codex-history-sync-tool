@@ -15,7 +15,7 @@ SwiftUI/前端页面
     -> Codex/OpenAI OAuth 或上游 HTTP
 ```
 
-本项目没有 Rust service，采用同样的职责边界但用 macOS 原生组件替代：SwiftUI 页面 -> `BackendClient` -> Service -> Keychain/JSON/URLSession -> OpenAI。
+本项目没有 Rust service，采用同样的职责边界但用 macOS 原生组件替代：SwiftUI 页面 -> `BackendClient` -> Service -> 本地 JSON/URLSession -> OpenAI。
 
 ## 账号模型和额度模型
 
@@ -72,26 +72,49 @@ HTTP 细节集中在 [`crates/service/src/usage/usage_http.rs`](https://github.c
 
 ## 直连切换和当前账号
 
-Codex-Manager 的账号相关 RPC 集中在 [`crates/service/src/rpc_dispatch/account.rs`](https://github.com/qxcnm/Codex-Manager/blob/main/crates/service/src/rpc_dispatch/account.rs)，同时提供 `account/read`、`account/logout`、登录、token refresh 等入口。账号列表页面 [`apps/src/app/accounts/accounts-page-view.tsx`](https://github.com/qxcnm/Codex-Manager/blob/main/apps/src/app/accounts/accounts-page-view.tsx) 提供添加、刷新、预热和选择操作。
+Codex-Manager 的 profile 直连切换不是普通的账号列表按钮，而是一个完整的 profile 接管流程。真实代码位置如下：
 
-对于本项目，“账号直连切换”的最小等价实现是：
+1. 前端入口：`apps/src/app/platform-mode/use-platform-mode-state.ts:160-174` 调用 `applyDirectAccount({ accountId, codexHome })`；成功后刷新状态并提示切换完成。
+2. 前端 RPC：`apps/src/lib/api/codex-profile-client.ts:255-266` 调用 `service_codex_profile_apply_direct_account`。
+3. RPC 路由：`crates/service/src/rpc_dispatch/codex_profile.rs:25-30` 转发到 `crate::codex_profile::apply_direct_account`。
+4. 核心流程：`crates/service/src/codex_profile.rs:284-339`，依次解析 profile、读取账号、检查 active、读取 token、刷新 token、备份、生成 auth、修补 config、写文件和刷新状态。
+5. 账号与 token 查询：`crates/core/src/storage/accounts.rs:572-588` 的 `find_account_direct_auth_profile_by_id`；token 查询和更新在 `crates/core/src/storage/tokens.rs` 的 `find_token_by_account_id`、`insert_token` 及 refresh schedule 方法。
+6. auth 结构：`crates/service/src/codex_profile.rs:1715-1737` 的 `build_direct_auth_json`。
+7. config 修补：`crates/service/src/codex_profile.rs:1748-1778` 的 `patch_config_for_direct`，只删除 Codex-Manager 自己的 `cm` provider，不删除其他 provider。
+8. 原子写入：`crates/service/src/codex_profile.rs:1808-1838` 的 `write_profile_files` 和 `1925-1940` 的 `write_atomic`，同时写 `auth.json`、`config.toml` 和 managed marker。
+9. 首次备份：`crates/service/src/codex_profile.rs:1840-1868` 的 `ensure_backup`，备份按 profile key 保存到 service 的持久化设置中，只生成一次。
+10. 回滚：`crates/service/src/codex_profile.rs:391-418` 的 `restore`，恢复原 auth/config，并清理 marker 和备份状态。
 
-- 账号池保存每个账号的认证材料；
-- 切换时读取目标账号的 token；
-- 原子备份并替换当前 `~/.codex/auth.json`；
-- 以 `last_refresh` 和当前账号身份重新加载界面。
+### Codex-Manager 的实际切换顺序
 
-这比实现 Codex-Manager 的完整 gateway/session routing 小，但满足桌面端直接切换 Codex 当前登录账号的需求。
+```text
+accountId/codexHome
+  -> resolve_profile_dir + ensure_profile_dir_valid
+  -> find_account_direct_auth_profile_by_id
+  -> 检查 account.status == active
+  -> find_token_by_account_id
+  -> ensure_usable_token
+  -> refresh_and_persist_access_token
+  -> ensure_backup（仅首次）
+  -> build_direct_auth_json
+  -> patch_config_for_direct
+  -> write_profile_files（auth/config/marker 原子写入）
+  -> persist_codex_home
+  -> status_for_profile_with_history_repair
+```
+
+因此本项目不能只写 `auth.json`。等价实现必须至少保留：token 刷新、首次备份、`cm` provider 清理、双文件失败回滚、切换后重启提示。网关轮换和 Codex-Manager 的 SQLite/RPC 体系不属于本项目范围。
 
 ## 调研结论和取舍
 
 | Codex-Manager 能力 | 本项目实现 |
 | --- | --- |
-| SQLite 账号/usage/metadata 多表 | 非敏感元数据与快照 JSON；token 使用 Keychain |
+| SQLite 账号/usage/metadata 多表 | `~/.codexhistorysync/config.json` 的 `accounts` 与 `selected_thread_ids` 字段 |
 | Tauri RPC | `BackendClient` + Swift Service |
 | OAuth PKCE + localhost callback | `ASWebAuthenticationSession` 或本机回调 URLSession server |
 | usage HTTP + refresh retry | Foundation `URLSession` |
 | Responses 预热 + usage refresh | Foundation `URLSession`，逐账号执行 |
+| profile 接管、auth/config 双文件写入 | 实现首次备份、`cm` provider 清理、双文件回滚和当前账号标记 |
 | gateway 自动轮换 | 不实现；只做当前 auth.json 直连切换 |
 
 参考代码足以定位具体实现：先看 `account-client.ts` 的操作契约，再看 `rpc_dispatch/account.rs` 的路由，最后分别进入 `auth_login.rs`、`auth_tokens.rs`、`usage_http.rs` 和 `account_warmup.rs`。

@@ -5,27 +5,24 @@ import Network
 
 struct AccountService: Sendable {
     let paths: AppPaths
-    let keychain = KeychainStore()
+    private let localConfig: LocalConfigStore
 
     private let issuer = "https://auth.openai.com"
     private let clientID = "app_EMoamEEZ73f0CkXaXp7hrann"
     private let usageURL = URL(string: "https://chatgpt.com/backend-api/wham/usage")!
     private let warmupURL = URL(string: "https://chatgpt.com/backend-api/codex/responses")!
 
-    init(paths: AppPaths = AppPaths()) { self.paths = paths }
+    init(paths: AppPaths = AppPaths()) {
+        self.paths = paths
+        self.localConfig = LocalConfigStore(paths: paths)
+    }
 
     func load() throws -> [AccountRecord] {
-        guard FileManager.default.fileExists(atPath: paths.accountPool.path) else { return [] }
-        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode([AccountRecord].self, from: Data(contentsOf: paths.accountPool))
+        try localConfig.load().accounts
     }
 
     func save(_ accounts: [AccountRecord]) throws {
-        try FileManager.default.createDirectory(at: paths.codexHome, withIntermediateDirectories: true)
-        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]; encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(accounts) + Data("\n".utf8)
-        try data.write(to: paths.accountPool, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: paths.accountPool.path)
+        try localConfig.saveAccounts(accounts)
     }
 
     func importCurrent() throws -> (AccountRecord, AccountCredentials) {
@@ -60,49 +57,65 @@ struct AccountService: Sendable {
     }
 
     func refresh(_ account: AccountRecord) async throws -> AccountRecord {
-        var credentials = try keychain.read(for: account.id)
+        guard var credentials = account.credentials else { throw AccountServiceError.credentialFile("账号凭据缺失，请重新登录。") }
         do {
             return try await withUsage(account, credentials: credentials)
         } catch AccountServiceError.http(401) where credentials.refreshToken != nil {
             credentials = try await refreshToken(credentials)
-            try keychain.save(credentials, for: account.id)
             return try await withUsage(account, credentials: credentials)
         }
     }
 
     func warmup(_ account: AccountRecord) async throws -> AccountRecord {
-        var credentials = try keychain.read(for: account.id)
+        guard var credentials = account.credentials else { throw AccountServiceError.credentialFile("账号凭据缺失，请重新登录。") }
         do {
             try await sendWarmup(credentials)
         } catch AccountServiceError.http(401) where credentials.refreshToken != nil {
-            credentials = try await refreshToken(credentials); try keychain.save(credentials, for: account.id); try await sendWarmup(credentials)
+            credentials = try await refreshToken(credentials); try await sendWarmup(credentials)
         }
-        return try await refresh(account)
+        return try await withUsage(account, credentials: credentials)
     }
 
-    func switchTo(_ account: AccountRecord) async throws {
-        var credentials = try keychain.read(for: account.id)
+    func switchTo(_ account: AccountRecord) async throws -> AccountRecord {
+        guard var credentials = account.credentials else { throw AccountServiceError.credentialFile("账号凭据缺失，请重新登录。") }
         if credentials.refreshToken != nil {
             credentials = try await refreshToken(credentials)
-            try keychain.save(credentials, for: account.id)
         }
-        let original = FileManager.default.fileExists(atPath: paths.auth.path) ? try Data(contentsOf: paths.auth) : nil
+        let originalAuth = FileManager.default.fileExists(atPath: paths.auth.path) ? try String(contentsOf: paths.auth, encoding: .utf8) : nil
+        let originalConfig = FileManager.default.fileExists(atPath: paths.config.path) ? try String(contentsOf: paths.config, encoding: .utf8) : nil
+        try saveProfileBackupIfNeeded(authJSON: originalAuth, configTOML: originalConfig)
         let data = try CodexAuthFile.directJSON(credentials: credentials, accountID: account.id)
+        let config = CodexAuthFile.directConfig(from: originalConfig)
         do {
-            try FileManager.default.createDirectory(at: paths.accountBackupDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-            if FileManager.default.fileExists(atPath: paths.auth.path) {
-                let backup = paths.accountBackupDirectory.appendingPathComponent("auth-\(Int(Date().timeIntervalSince1970 * 1000)).json")
-                try FileManager.default.copyItem(at: paths.auth, to: backup)
-                try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: backup.path)
-            }
-            try data.write(to: paths.auth, options: .atomic)
-            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: paths.auth.path)
+            try writeAtomically(data, to: paths.auth)
+            try writeAtomically(Data(config.utf8), to: paths.config)
             guard ((try? jsonObject(at: paths.auth)["tokens"] as? [String: Any])?["access_token"] as? String) == credentials.accessToken else { throw AccountServiceError.invalidAuthFile }
         } catch {
-            if let original { try? original.write(to: paths.auth, options: .atomic); try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: paths.auth.path) }
-            else { try? FileManager.default.removeItem(at: paths.auth) }
+            restore(originalAuth, to: paths.auth)
+            restore(originalConfig, to: paths.config)
             throw error
         }
+        var updated = account
+        updated.credentials = credentials
+        return updated
+    }
+
+    private func saveProfileBackupIfNeeded(authJSON: String?, configTOML: String?) throws {
+        guard !FileManager.default.fileExists(atPath: paths.profileBackup.path) else { return }
+        try FileManager.default.createDirectory(at: paths.accountBackupDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try writeAtomically(encoder.encode(CodexProfileBackup(authJSON: authJSON, configTOML: configTOML)), to: paths.profileBackup)
+    }
+
+    private func writeAtomically(_ data: Data, to url: URL) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try data.write(to: url, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
+
+    private func restore(_ content: String?, to url: URL) {
+        guard let content else { try? FileManager.default.removeItem(at: url); return }
+        try? writeAtomically(Data(content.utf8), to: url)
     }
 
     private func withUsage(_ account: AccountRecord, credentials: AccountCredentials) async throws -> AccountRecord {
@@ -113,7 +126,7 @@ struct AccountService: Sendable {
         request.setValue("https://chatgpt.com/", forHTTPHeaderField: "Referer")
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let status = (response as? HTTPURLResponse)?.statusCode, 200..<300 ~= status else { throw AccountServiceError.http((response as? HTTPURLResponse)?.statusCode ?? 0) }
-        var updated = account; updated.usage = try AccountUsageParser.snapshot(from: data); updated.lastRefresh = updated.usage?.capturedAt; updated.lastError = nil; updated.status = "active"; return updated
+        var updated = account; updated.credentials = credentials; updated.usage = try AccountUsageParser.snapshot(from: data); updated.lastRefresh = updated.usage?.capturedAt; updated.lastError = nil; updated.status = "active"; return updated
     }
 
     private func sendWarmup(_ credentials: AccountCredentials) async throws {
@@ -144,7 +157,7 @@ struct AccountService: Sendable {
     }
 
     private func record(for id: String, credentials: AccountCredentials) -> AccountRecord {
-        AccountRecord(id: id, displayName: claim(credentials.idToken, key: "email") ?? id, email: claim(credentials.idToken, key: "email"), chatgptAccountID: credentials.accountID, workspaceID: credentials.workspaceID, plan: claim(credentials.idToken, key: "chatgpt_plan_type"), status: "active", usage: nil, lastRefresh: nil, lastError: nil, isCurrent: false)
+        AccountRecord(id: id, displayName: claim(credentials.idToken, key: "email") ?? id, email: claim(credentials.idToken, key: "email"), chatgptAccountID: credentials.accountID, workspaceID: credentials.workspaceID, plan: claim(credentials.idToken, key: "chatgpt_plan_type"), status: "active", usage: nil, lastRefresh: nil, lastError: nil, isCurrent: false, credentials: credentials)
     }
 
     private func jsonObject(at url: URL) throws -> [String: Any] { guard let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any] else { throw AccountServiceError.invalidAuthFile }; return object }

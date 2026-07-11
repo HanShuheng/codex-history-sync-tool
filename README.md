@@ -77,7 +77,7 @@ Codex Desktop stores local thread metadata under `~/.codex`. After an account or
 3. Creates a SQLite-consistent database backup plus sidebar/session metadata snapshots.
 4. Updates only the selected scope and rebuilds the visible sidebar index.
 
-Backups are stored in `~/.codex/history_sync_backups`.
+Backups are stored in `~/.codexhistorysync/history_sync_backups`.
 
 ## Data Safety
 

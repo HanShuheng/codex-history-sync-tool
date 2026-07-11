@@ -30,7 +30,7 @@ struct BackupService: Sendable {
     }
 
     func create(label: String) throws -> URL {
-        try FileManager.default.createDirectory(at: paths.backupDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: paths.backupDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
         let destination = paths.backupDirectory.appendingPathComponent("state_5.sqlite.\(label).\(formatter.string(from: Date())).bak")

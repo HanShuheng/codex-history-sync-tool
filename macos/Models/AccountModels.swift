@@ -20,12 +20,23 @@ struct AccountRecord: Codable, Identifiable, Hashable, Sendable {
     var lastRefresh: Date?
     var lastError: String?
     var isCurrent: Bool
+    var credentials: AccountCredentials?
 }
 
-struct AccountCredentials: Codable, Sendable {
+struct AccountCredentials: Codable, Hashable, Sendable {
     var idToken: String?
     var accessToken: String
     var refreshToken: String?
     var accountID: String?
     var workspaceID: String?
+}
+
+struct CodexProfileBackup: Codable, Sendable {
+    let authJSON: String?
+    let configTOML: String?
+
+    enum CodingKeys: String, CodingKey {
+        case authJSON = "auth_json"
+        case configTOML = "config_toml"
+    }
 }

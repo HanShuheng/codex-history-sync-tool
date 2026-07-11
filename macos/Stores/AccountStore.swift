@@ -17,8 +17,7 @@ final class AccountStore: ObservableObject {
 
     func importCurrent() {
         execute {
-            let (account, credentials) = try self.service.importCurrent()
-            try self.service.keychain.save(credentials, for: account.id)
+            let (account, _) = try self.service.importCurrent()
             self.upsert(account)
             self.message = "已导入当前 Codex 账号。"
         }
@@ -26,8 +25,7 @@ final class AccountStore: ObservableObject {
 
     func login() {
         execute {
-            let (account, credentials) = try await self.service.login()
-            try self.service.keychain.save(credentials, for: account.id)
+            let (account, _) = try await self.service.login()
             self.upsert(account)
             self.message = "登录成功：\(account.displayName)"
             await self.refresh(account.id)
@@ -54,8 +52,8 @@ final class AccountStore: ObservableObject {
 
     func switchTo(_ account: AccountRecord) {
         execute {
-            try await self.service.switchTo(account)
-            self.accounts = self.accounts.map { var item = $0; item.isCurrent = item.id == account.id; return item }
+            let switched = try await self.service.switchTo(account)
+            self.accounts = self.accounts.map { var item = $0; item = item.id == account.id ? switched : item; item.isCurrent = item.id == account.id; return item }
             try self.service.save(self.accounts)
             self.message = "已切换到 \(account.displayName)，请重启 Codex 使新登录态生效。"
         }

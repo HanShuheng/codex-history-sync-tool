@@ -2,10 +2,11 @@ import Foundation
 
 struct HistoryService: Sendable {
     let paths: AppPaths
+    private var localConfig: LocalConfigStore { LocalConfigStore(paths: paths) }
 
     func threads() throws -> ThreadResponse {
         let config = try Configuration(contentsOf: paths.config)
-        let selected = try readStringSet(from: paths.selections, key: "selected_thread_ids")
+        let selected = try localConfig.load().selectedThreadIDs
         let pinned = try readStringSet(from: paths.globalState, key: "pinned-thread-ids")
         let database = try SQLiteDatabase(url: paths.database, readOnly: true)
         let columns = try threadColumns(database)
@@ -29,20 +30,21 @@ struct HistoryService: Sendable {
                 archived: row["archived"]?.bool ?? false,
                 pinned: pinned.contains(id),
                 selected: selected.contains(id),
-                isCurrent: provider == config.provider && (config.model == nil || model == config.model)
+                isCurrent: config.provider.map { provider == $0 && (config.model == nil || model == config.model) } ?? false
             )
         }
-        return ThreadResponse(currentProvider: config.provider, currentModel: config.model, threads: items)
+        return ThreadResponse(currentProvider: config.provider ?? "", currentModel: config.model, threads: items)
     }
 
     func saveSelections(_ ids: Set<String>) throws -> OperationResult {
-        try writeJSON(["selected_thread_ids": ids.sorted()], to: paths.selections)
+        try localConfig.saveSelectedThreadIDs(ids)
         return OperationResult(selectedCount: ids.count)
     }
 
     func sync(_ ids: Set<String>) throws -> OperationResult {
         guard !ids.isEmpty else { throw LocalizedServiceError("error.selection.required") }
         let config = try Configuration(contentsOf: paths.config)
+        guard let provider = config.provider else { throw LocalizedServiceError("error.config.providerMissing") }
         let backup = BackupService(paths: paths)
         _ = try backup.create(label: "pre-selected-sync")
         let database = try SQLiteDatabase(url: paths.database)
@@ -50,7 +52,7 @@ struct HistoryService: Sendable {
         let activeIDs = try activeIDs(in: database, requested: ids, hasArchived: columns.contains("archived"))
         let placeholders = Array(repeating: "?", count: activeIDs.count).joined(separator: ",")
         var assignments = ["model_provider = ?"]
-        var bindings = [config.provider]
+        var bindings = [provider]
         if let model = config.model, columns.contains("model") { assignments.append("model = ?"); bindings.append(model) }
         bindings.append(contentsOf: activeIDs.sorted())
         let guardClause = columns.contains("archived") ? " AND archived = 0" : ""
@@ -59,7 +61,7 @@ struct HistoryService: Sendable {
             bindings: bindings
         )
         let sessions = SessionService(paths: paths)
-        let sessionCount = try sessions.sync(ids: activeIDs, provider: config.provider, model: config.model)
+        let sessionCount = try sessions.sync(ids: activeIDs, provider: provider, model: config.model)
         try sessions.rebuildIndex(using: database)
         _ = try saveSelections(activeIDs)
         return OperationResult(updatedRows: updated, updatedSessionFiles: sessionCount, selectedCount: activeIDs.count)
@@ -80,13 +82,12 @@ struct HistoryService: Sendable {
 }
 
 private struct Configuration {
-    let provider: String
+    let provider: String?
     let model: String?
 
     init(contentsOf url: URL) throws {
         let text = try String(contentsOf: url, encoding: .utf8)
-        guard let provider = text.tomlValue(for: "model_provider") else { throw LocalizedServiceError("error.config.providerMissing") }
-        self.provider = provider
+        self.provider = text.tomlValue(for: "model_provider")
         model = text.tomlValue(for: "model")
     }
 }
@@ -114,15 +115,17 @@ private func formatTimestamp(_ value: String) -> String {
     return ISO8601DateFormatter().string(from: Date(timeIntervalSince1970: timestamp))
 }
 
+func writeJSON(_ object: Any, to url: URL) throws {
+    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+    let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]) + Data("\n".utf8)
+    try data.write(to: url, options: .atomic)
+    try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+}
+
 func readStringSet(from url: URL, key: String) throws -> Set<String> {
     guard FileManager.default.fileExists(atPath: url.path) else { return [] }
     let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
     return Set(object?[key] as? [String] ?? [])
-}
-
-func writeJSON(_ object: Any, to url: URL) throws {
-    let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]) + Data("\n".utf8)
-    try data.write(to: url, options: .atomic)
 }
 
 struct LocalizedServiceError: LocalizedError {

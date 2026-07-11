@@ -8,6 +8,7 @@ enum AccountServiceError: LocalizedError {
     case warmupIncomplete
     case http(Int)
     case keychain(OSStatus)
+    case credentialFile(String)
 
     var errorDescription: String? {
         switch self {
@@ -18,6 +19,7 @@ enum AccountServiceError: LocalizedError {
         case .warmupIncomplete: return "预热流在完成事件前结束。"
         case .http(let status): return "上游请求失败（HTTP \(status)）。"
         case .keychain: return "无法访问 macOS 钥匙串。"
+        case .credentialFile(let message): return message
         }
     }
 }

@@ -11,8 +11,10 @@ struct NativeBackendCheck {
         var database: OpaquePointer?
         precondition(sqlite3_open(home.appendingPathComponent("state_5.sqlite").path, &database) == SQLITE_OK)
         defer { sqlite3_close(database) }
-        precondition(sqlite3_exec(database, "CREATE TABLE threads (id TEXT PRIMARY KEY, model_provider TEXT, model TEXT, archived INTEGER); INSERT INTO threads VALUES ('selected', 'old', 'gpt-old', 0), ('untouched', 'old', 'gpt-old', 0);", nil, nil, nil) == SQLITE_OK)
-        let paths = AppPaths(codexHome: home)
+        precondition(sqlite3_exec(database, "CREATE TABLE threads (id TEXT PRIMARY KEY, title TEXT, cwd TEXT, model_provider TEXT, model TEXT, archived INTEGER, updated_at TEXT); INSERT INTO threads VALUES ('selected', 'Selected', '/tmp/project', 'old', 'gpt-old', 0, '1'), ('untouched', 'Untouched', '/tmp/project', 'old', 'gpt-old', 0, '2');", nil, nil, nil) == SQLITE_OK)
+        let paths = AppPaths(codexHome: home, appHome: home.appendingPathComponent("codexhistorysync"))
+        let initialThreads = try HistoryService(paths: paths).threads()
+        precondition(initialThreads.threads.allSatisfy { !$0.selected })
         let result = try HistoryService(paths: paths).sync(["selected"])
         precondition(result.updatedRows == 1)
         let rows = try SQLiteDatabase(url: paths.database, readOnly: true).query("SELECT model_provider FROM threads ORDER BY id")
