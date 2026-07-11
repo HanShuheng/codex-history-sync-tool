@@ -67,7 +67,11 @@ else
   codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP"
-hdiutil create -volname "$APP_NAME $APP_VERSION" -srcfolder "$APP" -ov -format UDZO "$ARCHIVE"
+DMG_ROOT="$(mktemp -d)"
+trap 'rm -rf "$DMG_ROOT"' EXIT
+cp -R "$APP" "$DMG_ROOT/"
+ln -s /Applications "$DMG_ROOT/Applications"
+hdiutil create -volname "$APP_NAME $APP_VERSION" -srcfolder "$DMG_ROOT" -ov -format UDZO "$ARCHIVE"
 
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then
   [[ "$SIGNING_IDENTITY" != "-" ]] || { echo "公证需要 SIGNING_IDENTITY。" >&2; exit 2; }
