@@ -7,6 +7,8 @@ struct BackupView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            header
+            Divider()
             if store.backups == nil {
                 ProgressView()
                     .controlSize(.large)
@@ -21,26 +23,45 @@ struct BackupView: View {
                 backupTable
             }
         }
-        .safeAreaInset(edge: .bottom) {
-            Text(summary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(.regularMaterial)
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button(localization.text("backup.openFolder")) { store.client.openBackups() }
-                Button(String(format: localization.text("backup.deleteSelected"), store.selectedBackups.count), role: .destructive) {
-                    confirmDelete = true
-                }
-                .disabled(store.selectedBackups.isEmpty || store.busy)
-            }
-        }
         .alert(localization.text("backup.deleteTitle"), isPresented: $confirmDelete) {
             Button(localization.text("common.cancel"), role: .cancel) {}
             Button(localization.text("common.delete"), role: .destructive) { store.deleteSelectedBackups() }
-        } message: { Text(localization.text("backup.deleteMessage")) }
+        } message: {
+            Text(localization.text("backup.deleteMessage"))
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(localization.text("backup.headerTitle")).font(.title2.bold())
+                Text(localization.text("backup.headerMessage"))
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 12) {
+                Text(summary).font(.subheadline).foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    store.client.openBackups()
+                } label: {
+                    Label(localization.text("backup.openFolder"), systemImage: "folder")
+                }
+                .buttonStyle(.bordered)
+                Button {
+                    confirmDelete = true
+                } label: {
+                    Label(
+                        String(format: localization.text("backup.deleteSelected"), store.selectedBackups.count),
+                        systemImage: "trash"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+                .disabled(store.selectedBackups.isEmpty || store.busy)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
     }
 
     private var summary: String {
@@ -55,8 +76,12 @@ struct BackupView: View {
                 Toggle("", isOn: binding(for: item)).labelsHidden()
             }.width(30)
             TableColumn(localization.text("backup.column.name"), value: \.name)
-            TableColumn(localization.text("backup.column.time")) { item in Text(localization.date(item.modifiedAt)) }.width(170)
-            TableColumn(localization.text("backup.column.size")) { item in Text(localization.bytes(Int64(item.sizeBytes))) }.width(100)
+            TableColumn(localization.text("backup.column.time")) { item in
+                Text(localization.date(item.modifiedAt))
+            }.width(170)
+            TableColumn(localization.text("backup.column.size")) { item in
+                Text(localization.bytes(Int64(item.sizeBytes)))
+            }.width(100)
         }
     }
 

@@ -19,6 +19,8 @@ struct HistoryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            header
+            Divider()
             if store.response == nil {
                 ProgressView()
                     .controlSize(.large)
@@ -30,44 +32,7 @@ struct HistoryView: View {
                     systemImage: "bubble.left.and.bubble.right"
                 )
             } else {
-                Table(threads) {
-                    TableColumn("") { item in
-                        Toggle("", isOn: selectionBinding(for: item)).labelsHidden()
-                    }.width(30)
-                    TableColumn(localization.text("table.task")) { item in
-                        HStack { if item.pinned { Image(systemName: "pin.fill").foregroundStyle(.orange) }; Text(item.title) }
-                    }
-                    TableColumn(localization.text("table.assignment")) { item in
-                        VStack(alignment: .leading) {
-                            Text(item.provider.isEmpty ? localization.text("value.empty") : item.provider)
-                            Text(item.model.isEmpty ? localization.text("value.empty") : item.model).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    TableColumn(localization.text("table.status")) { item in
-                        Text(localization.text(item.isCurrent ? "status.current" : "status.pending")).foregroundStyle(item.isCurrent ? .green : .orange)
-                    }.width(90)
-                    TableColumn(localization.text("table.updated")) { item in
-                        Text(localization.date(item.updatedAt))
-                    }.width(160)
-                }
-            }
-        }
-        .searchable(text: $search, placement: .toolbar, prompt: localization.text("history.search"))
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Toggle(localization.text("history.unsyncedOnly"), isOn: $currentOnly)
-                    .toggleStyle(.switch)
-                Button(action: toggleAll) {
-                    Image(systemName: selectionIcon)
-                }
-                .disabled(threads.isEmpty)
-                .help(localization.text(allVisibleSelected ? "history.deselectAll" : "history.selectAll"))
-                .accessibilityLabel(localization.text(allVisibleSelected ? "history.deselectAll" : "history.selectAll"))
-                Button(String(format: localization.text("history.syncSelected"), store.selectedIDs.count)) {
-                    showSyncConfirmation = true
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(store.selectedIDs.isEmpty || store.busy)
+                table
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -84,7 +49,79 @@ struct HistoryView: View {
         .alert(localization.text("sync.confirmTitle"), isPresented: $showSyncConfirmation) {
             Button(localization.text("common.cancel"), role: .cancel) {}
             Button(localization.text("common.sync"), role: .destructive) { store.syncSelected() }
-        } message: { Text(String(format: localization.text("sync.confirmMessage"), store.selectedIDs.count)) }
+        } message: {
+            Text(String(format: localization.text("sync.confirmMessage"), store.selectedIDs.count))
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(projectTitle).font(.title2.bold())
+                    Text(String(format: localization.text("history.count"), threads.count))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button {
+                    showSyncConfirmation = true
+                } label: {
+                    Label(
+                        String(format: localization.text("history.syncSelected"), store.selectedIDs.count),
+                        systemImage: "arrow.triangle.2.circlepath"
+                    )
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(store.selectedIDs.isEmpty || store.busy)
+            }
+            HStack(spacing: 12) {
+                TextField(localization.text("history.search"), text: $search)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 320)
+                Toggle(localization.text("history.unsyncedOnly"), isOn: $currentOnly)
+                    .toggleStyle(.switch)
+                Button(action: toggleAll) {
+                    Label(selectionActionTitle, systemImage: selectionIcon)
+                }
+                .buttonStyle(.bordered)
+                .disabled(threads.isEmpty)
+                Spacer()
+            }
+            Text(localization.text("history.syncHint"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+    }
+
+    private var table: some View {
+        Table(threads) {
+            TableColumn("") { item in
+                Toggle("", isOn: selectionBinding(for: item)).labelsHidden()
+            }.width(30)
+            TableColumn(localization.text("table.task")) { item in
+                HStack {
+                    if item.pinned { Image(systemName: "pin.fill").foregroundStyle(.orange) }
+                    Text(item.title)
+                }
+            }
+            TableColumn(localization.text("table.assignment")) { item in
+                VStack(alignment: .leading) {
+                    Text(item.provider.isEmpty ? localization.text("value.empty") : item.provider)
+                    Text(item.model.isEmpty ? localization.text("value.empty") : item.model)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            TableColumn(localization.text("table.status")) { item in
+                Text(localization.text(item.isCurrent ? "status.current" : "status.pending"))
+                    .foregroundStyle(item.isCurrent ? .green : .orange)
+            }.width(90)
+            TableColumn(localization.text("table.updated")) { item in
+                Text(localization.date(item.updatedAt))
+            }.width(170)
+        }
     }
 
     private var allVisibleSelected: Bool {
@@ -97,9 +134,13 @@ struct HistoryView: View {
         return URL(fileURLWithPath: project).lastPathComponent
     }
 
+    private var selectionActionTitle: String {
+        localization.text(allVisibleSelected ? "history.deselectVisible" : "history.selectVisible")
+    }
+
     private var selectionIcon: String {
         allVisibleSelected ? "checkmark.square.fill" :
-            threads.contains { store.selectedIDs.contains($0.id) } ? "minus.square.fill" : "square"
+            threads.contains { store.selectedIDs.contains($0.id) } ? "minus.square" : "square"
     }
 
     private func toggleAll() {

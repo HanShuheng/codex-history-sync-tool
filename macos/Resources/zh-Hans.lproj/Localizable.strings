@@ -11,11 +11,14 @@
 "value.unknown" = "未知";
 "accounts.title" = "Codex 账号池";
 "accounts.count" = "共 %d 个账号";
+"accounts.headerTitle" = "账号操作";
+"accounts.headerMessage" = "管理登录账号、查看额度，或切换当前 Codex 登录态。";
+"accounts.actionsTitle" = "常用操作";
+"accounts.actionsHint" = "未选择账号时，刷新和预热会作用于全部账号；预热会消耗一次请求额度。";
 "accounts.login" = "登录账号";
 "accounts.import" = "导入当前账号";
 "accounts.refresh" = "刷新额度";
 "accounts.warmup" = "预热账号";
-"accounts.hint" = "未选中时默认操作全部账号；预热会消耗一次请求额度。";
 "accounts.current" = "当前";
 "accounts.active" = "正常";
 "accounts.switch" = "切换";
@@ -37,10 +40,11 @@
 "history.all" = "全部历史";
 "history.count" = "%d 条对话";
 "history.search" = "搜索对话";
-"history.unsyncedOnly" = "仅未同步";
-"history.selectAll" = "全选";
-"history.deselectAll" = "取消全选";
+"history.unsyncedOnly" = "仅显示待同步";
+"history.selectVisible" = "选择当前结果";
+"history.deselectVisible" = "取消选择当前结果";
 "history.syncSelected" = "同步所选（%d）";
+"history.syncHint" = "先勾选需要处理的对话，再点击“同步所选”；同步前会自动创建完整备份。";
 "history.emptyTitle" = "没有符合条件的对话";
 "history.emptyMessage" = "尝试切换项目、清除搜索，或等待 Codex 历史加载完成。";
 "table.task" = "对话";
@@ -52,6 +56,8 @@
 "sync.confirmTitle" = "同步所选对话？";
 "sync.confirmMessage" = "将先创建完整备份，再只修改已勾选的 %d 条对话。";
 "backup.title" = "备份管理";
+"backup.headerTitle" = "备份操作";
+"backup.headerMessage" = "同步前会自动创建完整备份；删除备份前请确认不再需要恢复。";
 "backup.openFolder" = "打开目录";
 "backup.deleteSelected" = "删除所选（%d）";
 "backup.summary" = "共 %d 组，占用 %@";
@@ -75,4 +81,4 @@
 "error.selection.required" = "请至少选择一条历史记录。";
 "error.config.providerMissing" = "config.toml 中缺少 model_provider。";
 "accounts.emptyTitle" = "还没有账号";
-"accounts.emptyMessage" = "可以从当前 Codex 登录态导入，或使用工具栏登录新账号。";
+"accounts.emptyMessage" = "可以从当前 Codex 登录态导入，或使用上方“账号操作”区登录新账号。";
