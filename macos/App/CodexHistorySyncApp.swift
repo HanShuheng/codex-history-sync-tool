@@ -1,4 +1,9 @@
+import AppKit
 import SwiftUI
+
+private final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+}
 
 struct MainView: View {
     @EnvironmentObject private var localization: LocalizationStore
@@ -44,6 +49,7 @@ struct MainView: View {
 
 @main
 struct CodexHistorySyncApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var localization = LocalizationStore()
 
     var body: some Scene {
