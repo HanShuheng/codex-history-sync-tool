@@ -3,49 +3,9 @@ import SwiftUI
 
 private final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
-}
-
-struct MainView: View {
-    @EnvironmentObject private var localization: LocalizationStore
-    @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var store = AppStore()
-    @StateObject private var accountStore = AccountStore()
-    @State private var workspace = Workspace.history
-    @State private var project = ""
-    var body: some View {
-        NavigationSplitView {
-            SidebarView(store: store, workspace: $workspace, project: $project)
-                .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
-        } detail: {
-            Group {
-                switch workspace {
-                case .history: HistoryView(store: store, project: project)
-                case .backups: BackupView(store: store)
-                case .accounts: AccountsView(store: accountStore)
-                }
-            }
-            .navigationTitle(localization.text(workspace == .history ? "nav.history" : workspace == .backups ? "nav.backups" : "nav.accounts"))
-        }
-        .frame(minWidth: 960, minHeight: 620)
-        .overlay { if store.busy { ProgressView().controlSize(.large) } }
-        .toolbar {
-            Picker(localization.text("settings.language"), selection: $localization.language) {
-                ForEach(AppLanguage.allCases) { language in
-                    Text(language == .system ? localization.text("language.system") : language.displayName)
-                        .tag(language)
-                }
-            }
-            .pickerStyle(.menu)
-            .help(localization.text("settings.language"))
-        }
-        .task { store.load(); accountStore.load() }
-        .onChange(of: scenePhase) { phase in
-            if phase == .background { store.persistSelections(immediately: true) }
-        }
-        .onDisappear { store.persistSelections(immediately: true) }
-        .alert(localization.text("error.title"), isPresented: Binding(get: { store.errorKey != nil }, set: { if !$0 { store.errorKey = nil } })) {
-            Button(localization.text("common.ok")) { store.errorKey = nil }
-        } message: { Text(localization.text(store.errorKey ?? "error.unknown")) }
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 
@@ -55,7 +15,10 @@ struct CodexHistorySyncApp: App {
     @StateObject private var localization = LocalizationStore()
 
     var body: some Scene {
-        WindowGroup { MainView().environmentObject(localization) }
+        WindowGroup {
+            MainView().environmentObject(localization)
+        }
+        .defaultSize(width: 1180, height: 760)
         Settings { SettingsView().environmentObject(localization) }
     }
 }

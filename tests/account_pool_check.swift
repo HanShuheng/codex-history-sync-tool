@@ -26,10 +26,20 @@ struct AccountPoolCheck {
 
         let missing = try AccountUsageParser.snapshot(from: Data("{}".utf8), capturedAt: Date(timeIntervalSince1970: 2))
         precondition(missing.primaryRemainPercent == nil && missing.secondaryRemainPercent == nil)
+        let clamped = try AccountUsageParser.snapshot(from: Data("""
+        {"rate_limit":{"primary_window":{"used_percent":-10},"secondary_window":{"used_percent":140}}}
+        """.utf8))
+        precondition(clamped.primaryRemainPercent == 100)
+        precondition(clamped.secondaryRemainPercent == 0)
+        do {
+            _ = try AccountUsageParser.snapshot(from: Data("not-json".utf8))
+            preconditionFailure("无效额度响应应该失败")
+        } catch AccountServiceError.invalidUsageResponse {}
         precondition(!WarmupResponseParser.isComplete(Data("event: response.in_progress\n".utf8)))
         precondition(WarmupResponseParser.isComplete(Data("event: response.completed\ndata: {}\n".utf8)))
         precondition(WarmupResponseParser.isComplete(Data("event: response.done\ndata: {}\n".utf8)))
         precondition(WarmupResponseParser.isComplete(Data("data: [DONE]\n".utf8)))
+        precondition(!WarmupResponseParser.isComplete(Data("event: response.failed\ndata: {}\n".utf8)))
         do {
             try WarmupResponseParser.validate(Data("event: response.failed\ndata: {\"error\":{\"message\":\"quota exceeded\"}}\n".utf8))
             preconditionFailure("错误事件应该失败")
@@ -66,6 +76,7 @@ struct AccountPoolCheck {
         let directConfig = CodexAuthFile.directConfig(from: "model_provider = \"cm\"\nmodel = \"gpt-5\"\n\n[model_providers.cm]\nbase_url = \"http://localhost\"\n\n[model_providers.other]\nname = \"Other\"\n")
         precondition(!directConfig.contains("model_provider = \"cm\""))
         precondition(!directConfig.contains("[model_providers.cm]"))
+        precondition(!CodexAuthFile.directConfig(from: "model_provider = \"cm\"\n[model_providers.cm.extra]\nkey = 1\n").contains("model_providers.cm"))
         precondition(directConfig.contains("[model_providers.other]"))
 
         let gate = OAuthCallbackGate()

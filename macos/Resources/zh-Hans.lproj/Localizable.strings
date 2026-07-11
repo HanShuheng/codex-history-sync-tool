@@ -41,6 +41,8 @@
 "history.selectAll" = "全选";
 "history.deselectAll" = "取消全选";
 "history.syncSelected" = "同步所选（%d）";
+"history.emptyTitle" = "没有符合条件的对话";
+"history.emptyMessage" = "尝试切换项目、清除搜索，或等待 Codex 历史加载完成。";
 "table.task" = "对话";
 "table.assignment" = "归属";
 "table.status" = "状态";
@@ -58,6 +60,8 @@
 "backup.column.name" = "备份";
 "backup.column.time" = "时间";
 "backup.column.size" = "大小";
+"backup.emptyTitle" = "暂无备份";
+"backup.emptyMessage" = "每次同步前会自动创建完整备份，备份完成后会显示在这里。";
 "common.ok" = "好";
 "common.cancel" = "取消";
 "common.sync" = "同步";
@@ -70,3 +74,5 @@
 "error.backup.invalidName" = "发现无效备份名称，未删除任何文件。";
 "error.selection.required" = "请至少选择一条历史记录。";
 "error.config.providerMissing" = "config.toml 中缺少 model_provider。";
+"accounts.emptyTitle" = "还没有账号";
+"accounts.emptyMessage" = "可以从当前 Codex 登录态导入，或使用工具栏登录新账号。";

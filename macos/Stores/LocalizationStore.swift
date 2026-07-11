@@ -17,7 +17,7 @@ final class LocalizationStore: ObservableObject {
 
     func date(_ value: String) -> String {
         guard let date = try? Date.ISO8601FormatStyle().parse(value) else { return value }
-        return date.formatted(.dateTime.year().month().day().hour().minute().locale(language.locale))
+        return AppConstants.displayDateFormatter.string(from: date)
     }
 
     func bytes(_ value: Int64) -> String {

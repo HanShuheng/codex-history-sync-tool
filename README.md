@@ -13,12 +13,15 @@ A native macOS, backup-first utility for making Codex Desktop conversations visi
 ## Features
 
 - Native macOS SwiftUI app for browsing and syncing selected conversations
+- Standard macOS sidebar-detail layout with toolbar actions, searchable history, keyboard-friendly selection, and clear empty states
 - Fully native local services powered by Foundation and system SQLite
 - Syncs provider/model metadata, session metadata, and the sidebar index
 - Excludes archived conversations from listing and synchronization
 - Switches between English and Simplified Chinese at runtime; localization resources are ready for more languages
+- Displays all user-facing timestamps as `yyyy-MM-dd HH:mm:ss`
 - Creates a complete backup before every sync
 - Manages backup bundles without third-party dependencies
+- Optional local Codex account pool for login, usage refresh, warmup, and direct account switching
 
 ## Screenshots
 
@@ -32,7 +35,7 @@ A native macOS, backup-first utility for making Codex Desktop conversations visi
 
 ## Download and Use
 
-1. Download `CodexHistorySync.dmg` from [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases), version `v0.0.1`.
+1. Download `CodexHistorySync.dmg` from [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases), version `v0.1.0`.
 2. Open the disk image and move `CodexHistorySync.app` to `Applications`.
 3. Quit or pause active Codex tasks before changing history metadata.
 4. Open the app, select the conversations you want, and click **Sync Selected**.
@@ -99,11 +102,14 @@ The software is provided **“as is”**, without warranties of any kind. To the
 
 ```bash
 ./script/test_native_backend.sh
+./script/test_account_pool.sh
 swift build
 ./script/build_and_run.sh --verify
 ```
 
-The project uses only the Swift standard library, Foundation, SwiftUI, and system SQLite. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+The run script also supports `--debug`, `--logs`, and `--telemetry`. SwiftPM first stages a real `.app` bundle and launches it through macOS `open`; `--verify` checks that the app process is running.
+
+The project uses only the Swift standard library, Foundation, SwiftUI, and system SQLite. The app entrypoint, views, models, stores, services, support code, and resources are kept in separate directories. See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the [Codex-Manager analysis](docs/codexmanager分析/02-Codex-Manager功能分析.md).
 
 Swift sources follow `App`, `Views`, `Models`, `Stores`, `Services`, `Support`, and `Resources` boundaries. To add a language, add `Resources/<language>.lproj/Localizable.strings` and register it in `AppLanguage`.
 

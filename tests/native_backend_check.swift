@@ -29,6 +29,10 @@ struct NativeBackendCheck {
         let encodedUsage = try encoder.encode(usage)
         precondition(!encodedUsage.isEmpty)
         _ = try decoder.decode(AccountUsageSnapshot.self, from: encodedUsage)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        let displayDate = calendar.date(from: DateComponents(year: 2026, month: 7, day: 11, hour: 18, minute: 25, second: 3))!
+        precondition(AppConstants.displayDateFormatter.string(from: displayDate) == "2026-07-11 18:25:03")
         print("原生后端自检通过")
     }
 }

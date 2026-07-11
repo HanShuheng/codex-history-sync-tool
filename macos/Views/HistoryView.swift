@@ -19,20 +19,17 @@ struct HistoryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(projectTitle).font(.title2.bold())
-                        Text(String(format: localization.text("history.count"), threads.count)).font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                }.padding(.horizontal).padding(.top, 12)
-                HStack {
-                    TextField(localization.text("history.search"), text: $search).textFieldStyle(.roundedBorder).frame(maxWidth: 280)
-                    Toggle(localization.text("history.unsyncedOnly"), isOn: $currentOnly).toggleStyle(.switch)
-                    Spacer()
-                    Button(String(format: localization.text("history.syncSelected"), store.selectedIDs.count)) { showSyncConfirmation = true }
-                        .buttonStyle(.borderedProminent).disabled(store.selectedIDs.isEmpty)
-                }.padding()
+            if store.response == nil {
+                ProgressView()
+                    .controlSize(.large)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if threads.isEmpty {
+                EmptyStateView(
+                    title: localization.text("history.emptyTitle"),
+                    message: localization.text("history.emptyMessage"),
+                    systemImage: "bubble.left.and.bubble.right"
+                )
+            } else {
                 Table(threads) {
                     TableColumn("") { item in
                         Toggle("", isOn: selectionBinding(for: item)).labelsHidden()
@@ -53,16 +50,36 @@ struct HistoryView: View {
                         Text(localization.date(item.updatedAt))
                     }.width(160)
                 }
-                .overlay(alignment: .topLeading) {
-                    Button(action: toggleAll) {
-                        Image(systemName: selectionIcon)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(threads.isEmpty)
-                    .help(localization.text(allVisibleSelected ? "history.deselectAll" : "history.selectAll"))
-                    .padding(.leading, 16)
-                    .padding(.top, 8)
+            }
+        }
+        .searchable(text: $search, placement: .toolbar, prompt: localization.text("history.search"))
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Toggle(localization.text("history.unsyncedOnly"), isOn: $currentOnly)
+                    .toggleStyle(.switch)
+                Button(action: toggleAll) {
+                    Image(systemName: selectionIcon)
                 }
+                .disabled(threads.isEmpty)
+                .help(localization.text(allVisibleSelected ? "history.deselectAll" : "history.selectAll"))
+                .accessibilityLabel(localization.text(allVisibleSelected ? "history.deselectAll" : "history.selectAll"))
+                Button(String(format: localization.text("history.syncSelected"), store.selectedIDs.count)) {
+                    showSyncConfirmation = true
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(store.selectedIDs.isEmpty || store.busy)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            HStack {
+                Text(projectTitle).font(.headline)
+                Spacer()
+                Text(String(format: localization.text("history.count"), threads.count))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(.regularMaterial)
         }
         .alert(localization.text("sync.confirmTitle"), isPresented: $showSyncConfirmation) {
             Button(localization.text("common.cancel"), role: .cancel) {}
