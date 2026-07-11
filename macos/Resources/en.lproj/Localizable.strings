@@ -11,11 +11,14 @@
 "value.unknown" = "Unknown";
 "accounts.title" = "Codex Accounts";
 "accounts.count" = "%d accounts";
+"accounts.headerTitle" = "Account actions";
+"accounts.headerMessage" = "Manage local sign-ins, review usage, or switch the active Codex profile.";
+"accounts.actionsTitle" = "Common actions";
+"accounts.actionsHint" = "With no accounts selected, refresh and warmup apply to all accounts; warmup uses one request.";
 "accounts.login" = "Log In";
 "accounts.import" = "Import Current";
 "accounts.refresh" = "Refresh Usage";
 "accounts.warmup" = "Warm Up";
-"accounts.hint" = "With no selection, the action applies to all accounts; warmup uses one request.";
 "accounts.current" = "Current";
 "accounts.active" = "Active";
 "accounts.switch" = "Switch";
@@ -37,10 +40,11 @@
 "history.all" = "All History";
 "history.count" = "%d conversations";
 "history.search" = "Search conversations";
-"history.unsyncedOnly" = "Unsynced only";
-"history.selectAll" = "Select All";
-"history.deselectAll" = "Deselect All";
+"history.unsyncedOnly" = "Show pending only";
+"history.selectVisible" = "Select visible";
+"history.deselectVisible" = "Deselect visible";
 "history.syncSelected" = "Sync Selected (%d)";
+"history.syncHint" = "Select conversations first, then choose Sync Selected; a complete backup is created before syncing.";
 "history.emptyTitle" = "No conversations found";
 "history.emptyMessage" = "Try another project, clear the search, or wait for Codex history to finish loading.";
 "table.task" = "Conversation";
@@ -52,6 +56,8 @@
 "sync.confirmTitle" = "Sync selected conversations?";
 "sync.confirmMessage" = "A complete backup will be created before updating the %d selected conversations.";
 "backup.title" = "Backup Manager";
+"backup.headerTitle" = "Backup actions";
+"backup.headerMessage" = "A complete backup is created before syncing; only delete backups you no longer need.";
 "backup.openFolder" = "Open Folder";
 "backup.deleteSelected" = "Delete Selected (%d)";
 "backup.summary" = "%d backups, %@ total";
@@ -75,4 +81,4 @@
 "error.selection.required" = "Select at least one conversation.";
 "error.config.providerMissing" = "model_provider is missing from config.toml.";
 "accounts.emptyTitle" = "No accounts yet";
-"accounts.emptyMessage" = "Import the current Codex login or use the toolbar to sign in to a new account.";
+"accounts.emptyMessage" = "Import the current Codex login or use the Account actions above to sign in.";

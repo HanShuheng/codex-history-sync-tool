@@ -13,7 +13,7 @@ A native macOS, backup-first utility for making Codex Desktop conversations visi
 ## Features
 
 - Native macOS SwiftUI app for browsing and syncing selected conversations
-- Standard macOS sidebar-detail layout with toolbar actions, searchable history, keyboard-friendly selection, and clear empty states
+- Standard macOS sidebar-detail layout with labeled page actions, searchable history, keyboard-friendly selection, and clear empty states
 - Fully native local services powered by Foundation and system SQLite
 - Syncs provider/model metadata, session metadata, and the sidebar index
 - Excludes archived conversations from listing and synchronization
