@@ -36,7 +36,7 @@ enum CodexModelCatalog {
         return models
     }
 
-    // 模型目录目前没有稳定的 token 价格字段；顺序与 Codex-Manager 的 sort_index 规则一致。
+    // 模型目录目前没有稳定的 token 价格字段，按服务端目录顺序选择可用模型。
     static func selectPreferredModel(from models: [CodexAvailableModel]) -> String? {
         models
             .filter { model in

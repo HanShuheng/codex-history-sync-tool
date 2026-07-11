@@ -109,7 +109,7 @@ swift build
 
 运行脚本还支持 `--debug`、`--logs` 和 `--telemetry`。SwiftPM 会先把应用组装为真正的 `.app`，再通过 macOS `open` 启动；`--verify` 会检查应用进程是否存在。
 
-项目只使用 Swift 标准库、Foundation、SwiftUI 与系统 SQLite。应用入口、视图、模型、状态、服务、支持代码和资源按目录分层。贡献与安全报告方式见 [CONTRIBUTING.md](CONTRIBUTING.md)、[SECURITY.md](SECURITY.md) 和 [Codex-Manager 分析](docs/codexmanager分析/02-Codex-Manager功能分析.md)。
+项目只使用 Swift 标准库、Foundation、SwiftUI 与系统 SQLite。应用入口、视图、模型、状态、服务、支持代码和资源按目录分层。贡献与安全报告方式见 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [SECURITY.md](SECURITY.md)。
 
 Swift 源码按 `App`、`Views`、`Models`、`Stores`、`Services`、`Support` 和 `Resources` 分层。新增语言时，只需添加 `Resources/<语言>.lproj/Localizable.strings` 并在 `AppLanguage` 中注册。
 
