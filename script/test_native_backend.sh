@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+mkdir -p .build
 swiftc -parse-as-library \
   macos/Models/AppPaths.swift macos/Models/Models.swift macos/Support/AppConstants.swift \
   macos/Services/SQLiteDatabase.swift macos/Services/SessionService.swift \
