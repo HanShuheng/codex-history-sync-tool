@@ -368,7 +368,13 @@ def iso_utc_from_unix(timestamp: int) -> str:
 def parse_index_timestamp(value: str) -> datetime:
     if not value:
         return datetime.fromtimestamp(0, tz=UTC)
-    normalized = value.replace("Z", "+00:00")
+    normalized = re.sub(
+        r"\.(\d+)(?=Z$|[+-]\d{2}:\d{2}$|$)",
+        lambda match: "." + match.group(1)[:6].ljust(6, "0"),
+        value,
+    )
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
     parsed = datetime.fromisoformat(normalized)
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=UTC)

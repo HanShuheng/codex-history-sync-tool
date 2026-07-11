@@ -6,7 +6,7 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 
-from sync_backend import get_status, make_backup, resolve_paths, restore_backup, sync_to_current_provider
+from sync_backend import get_status, make_backup, parse_index_timestamp, resolve_paths, restore_backup, sync_to_current_provider
 from history_manager import backup_items, delete_backups, display_title, read_selections, save_selections, sync_selected
 
 
@@ -43,6 +43,11 @@ def create_threads_db(codex_home, *, with_model: bool = True) -> None:
 
 
 class SyncBackendTests(unittest.TestCase):
+    def test_parse_index_timestamp_accepts_five_digit_fraction(self) -> None:
+        parsed = parse_index_timestamp("2026-04-24T06:59:07.51026Z")
+
+        self.assertEqual(parsed.isoformat(), "2026-04-24T06:59:07.510260+00:00")
+
     def test_display_title_collapses_whitespace_and_limits_payload(self) -> None:
         title = display_title("hello\n\nworld " + "x" * 300, "fallback")
 
