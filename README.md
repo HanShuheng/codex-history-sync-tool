@@ -6,44 +6,67 @@
   <img src="macos/Resources/Assets/AppIcon.png" width="160" alt="Codex History Sync Tool icon">
 </p>
 
-A macOS-native, backup-first tool that restores Codex Desktop conversations hidden after switching accounts, providers, models, or login methods.
+A native macOS, backup-first utility for making Codex Desktop conversations visible again after switching accounts, providers, models, or login methods.
 
 > This tool changes local Codex metadata only. It does not upload conversations, sync between devices, or recover deleted files.
 
 ## Features
 
 - Native macOS SwiftUI app for browsing and syncing selected conversations
-- Native macOS SwiftUI app with a local Python backend
+- Fully native local services powered by Foundation and system SQLite
 - Syncs provider/model metadata, session metadata, and the sidebar index
 - Excludes archived conversations from listing and synchronization
 - Switches between English and Simplified Chinese at runtime; localization resources are ready for more languages
-- Creates a complete backup before every sync or restore
-- Manages backup bundles without third-party Python dependencies
+- Creates a complete backup before every sync
+- Manages backup bundles without third-party dependencies
 
-## Quick Start
+## Screenshots
 
-### macOS app
+### History
 
-Requirements: macOS 13+, Xcode Command Line Tools, and Python 3.10+.
+![History view](docs/images/history-en.png)
+
+### Backup Manager
+
+![Backup Manager view](docs/images/backups-en.png)
+
+## Download and Use
+
+1. Download `CodexHistorySync.zip` from the project release page.
+2. Unzip it and move `CodexHistorySync.app` to `Applications`.
+3. Quit or pause active Codex tasks before changing history metadata.
+4. Open the app, select the conversations you want, and click **Sync Selected**.
+5. Restart Codex Desktop if its sidebar does not refresh immediately.
+
+The release is a self-contained universal app for Apple Silicon and Intel Macs running macOS 13 or later. Python and Xcode are not required to use the compiled app.
+
+> If a build has not been signed and notarized with an Apple Developer ID, macOS may block the first launch. Right-click the app and choose **Open** only when you obtained it from a source you trust. Public releases should be signed and notarized by the distributor.
+
+## Build from Source
+
+Requirements: macOS 13+ and Xcode Command Line Tools.
 
 ```bash
-git clone https://github.com/GODGOD126/codex-history-sync-tool.git
+git clone https://github.com/HanShuheng/codex-history-sync-tool.git
 cd codex-history-sync-tool
 ./script/build_and_run.sh
 ```
 
-The app is built locally at `dist/CodexHistorySync.app`. Select only the conversations you want, then click **Sync Selected**. Archived conversations are intentionally hidden and never changed.
+The app is built locally at `dist/CodexHistorySync.app`. Archived conversations are intentionally hidden and never changed.
 
-### CLI
+### Build a distributable app
 
 ```bash
-python3 sync_backend.py --json status
-python3 sync_backend.py --json backup
-python3 sync_backend.py --json sync
-python3 sync_backend.py --json restore
+./script/package_release.sh
 ```
 
-`sync` updates every non-archived conversation that does not match the current provider/model. Use the macOS app when you want per-conversation selection.
+This creates universal Apple Silicon and Intel artifacts at `dist/CodexHistorySync.app` and `dist/CodexHistorySync.zip`. Public distribution requires Apple Developer ID signing and notarization:
+
+```bash
+SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+NOTARY_PROFILE="notary-profile" \
+./script/package_release.sh
+```
 
 ## How It Works
 
@@ -56,25 +79,34 @@ Codex Desktop stores local thread metadata under `~/.codex`. After an account or
 
 Backups are stored in `~/.codex/history_sync_backups`.
 
-## Safety
+## Data Safety
 
-- Pause active Codex responses before restoring a backup.
+- Pause active Codex responses before syncing history.
+- Keep the automatically created backup until you have confirmed that Codex displays the expected conversations.
 - Never publish your `~/.codex` directory, database, sessions, configuration, or backups.
 - If the sidebar does not refresh immediately, restart Codex Desktop.
 - Conversations may still be grouped by their original project directory (`cwd`). This tool does not rewrite project ownership.
 
+## Legal and Responsibility Notice
+
+This project is provided solely for learning, research, and personal local-data maintenance. It is an independent community project and is not affiliated with, endorsed by, or supported by OpenAI or Codex.
+
+The software directly modifies local Codex metadata. Before using it, you are responsible for backing up your data, verifying that your use complies with applicable laws, platform terms, workplace policies, and third-party rights, and confirming that you are authorized to operate on the relevant device and data. Do not use it to access, alter, disclose, or distribute data without authorization.
+
+The software is provided **“as is”**, without warranties of any kind. To the maximum extent permitted by applicable law, the authors and contributors are not liable for data loss, account issues, service interruption, device damage, compliance failures, disputes, or other direct or indirect losses arising from use or misuse of the software. You assume the risks and consequences of using it. This notice does not exclude liability that cannot legally be excluded. See the [MIT License](LICENSE) for the governing license terms.
+
 ## Development
 
 ```bash
-python3 -m unittest discover -s tests -v
+./script/test_native_backend.sh
 swift build
 ./script/build_and_run.sh --verify
 ```
 
-The project uses only Python's standard library and native macOS frameworks. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+The project uses only the Swift standard library, Foundation, SwiftUI, and system SQLite. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 Swift sources follow `App`, `Views`, `Models`, `Stores`, `Services`, `Support`, and `Resources` boundaries. To add a language, add `Resources/<language>.lproj/Localizable.strings` and register it in `AppLanguage`.
 
 ## License
 
-[MIT](LICENSE)
+[MIT License](LICENSE). By using, copying, modifying, or distributing this project, you agree to follow its license terms and accept the responsibility notice above.

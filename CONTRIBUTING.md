@@ -3,7 +3,7 @@
 欢迎提交 Issue 和 Pull Request。修改前请先说明问题与复现方式，并保持改动聚焦。
 
 ```bash
-python3 -m unittest discover -s tests -v
+./script/test_native_backend.sh
 swift build
 ```
 

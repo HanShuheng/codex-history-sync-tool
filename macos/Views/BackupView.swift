@@ -4,7 +4,6 @@ struct BackupView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @ObservedObject var store: AppStore
     @State private var confirmDelete = false
-    private let formatter = ByteCountFormatter()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -33,7 +32,7 @@ struct BackupView: View {
     private var summary: String {
         let count = store.backups?.backups.count ?? 0
         let bytes = Int64(store.backups?.totalSizeBytes ?? 0)
-        return String(format: localization.text("backup.summary"), count, formatter.string(fromByteCount: bytes))
+        return String(format: localization.text("backup.summary"), count, localization.bytes(bytes))
     }
 
     private var backupTable: some View {
@@ -42,8 +41,8 @@ struct BackupView: View {
                 Toggle("", isOn: binding(for: item)).labelsHidden()
             }.width(30)
             TableColumn(localization.text("backup.column.name"), value: \.name)
-            TableColumn(localization.text("backup.column.time"), value: \.modifiedAt).width(170)
-            TableColumn(localization.text("backup.column.size")) { item in Text(formatter.string(fromByteCount: Int64(item.sizeBytes))) }.width(100)
+            TableColumn(localization.text("backup.column.time")) { item in Text(localization.date(item.modifiedAt)) }.width(170)
+            TableColumn(localization.text("backup.column.size")) { item in Text(localization.bytes(Int64(item.sizeBytes))) }.width(100)
         }
     }
 

@@ -1,6 +1,7 @@
 # Build and editor artifacts
 .build/
 dist/
+tmp/
 DerivedData/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/

@@ -38,6 +38,20 @@ struct OperationResult: Codable, Sendable {
         case updatedRows = "updated_rows", updatedSessionFiles = "updated_session_files", selectedCount = "selected_count"
         case deletedBackups = "deleted_backups", deletedFiles = "deleted_files", freedBytes = "freed_bytes"
     }
-}
 
-struct ErrorResult: Codable, Sendable { let error: String }
+    init(
+        updatedRows: Int? = nil,
+        updatedSessionFiles: Int? = nil,
+        selectedCount: Int? = nil,
+        deletedBackups: Int? = nil,
+        deletedFiles: Int? = nil,
+        freedBytes: Int? = nil
+    ) {
+        self.updatedRows = updatedRows
+        self.updatedSessionFiles = updatedSessionFiles
+        self.selectedCount = selectedCount
+        self.deletedBackups = deletedBackups
+        self.deletedFiles = deletedFiles
+        self.freedBytes = freedBytes
+    }
+}

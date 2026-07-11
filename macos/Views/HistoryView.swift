@@ -21,7 +21,7 @@ struct HistoryView: View {
         VStack(spacing: 0) {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(project.isEmpty ? localization.text("history.all") : URL(fileURLWithPath: project).lastPathComponent).font(.title2.bold())
+                        Text(projectTitle).font(.title2.bold())
                         Text(String(format: localization.text("history.count"), threads.count)).font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -41,13 +41,16 @@ struct HistoryView: View {
                         HStack { if item.pinned { Image(systemName: "pin.fill").foregroundStyle(.orange) }; Text(item.title) }
                     }
                     TableColumn(localization.text("table.assignment")) { item in
-                        VStack(alignment: .leading) { Text(item.provider); Text(item.model).font(.caption).foregroundStyle(.secondary) }
+                        VStack(alignment: .leading) {
+                            Text(item.provider.isEmpty ? localization.text("value.empty") : item.provider)
+                            Text(item.model.isEmpty ? localization.text("value.empty") : item.model).font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                     TableColumn(localization.text("table.status")) { item in
                         Text(localization.text(item.isCurrent ? "status.current" : "status.pending")).foregroundStyle(item.isCurrent ? .green : .orange)
                     }.width(90)
                     TableColumn(localization.text("table.updated")) { item in
-                        Text(item.updatedAt.replacingOccurrences(of: "T", with: " "))
+                        Text(localization.date(item.updatedAt))
                     }.width(160)
                 }
                 .overlay(alignment: .topLeading) {
@@ -69,6 +72,12 @@ struct HistoryView: View {
 
     private var allVisibleSelected: Bool {
         !threads.isEmpty && threads.allSatisfy { store.selectedIDs.contains($0.id) }
+    }
+
+    private var projectTitle: String {
+        if project.isEmpty { return localization.text("history.all") }
+        if project == AppConstants.unassignedProjectIdentifier { return localization.text("project.unassigned") }
+        return URL(fileURLWithPath: project).lastPathComponent
     }
 
     private var selectionIcon: String {

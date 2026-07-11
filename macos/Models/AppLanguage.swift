@@ -7,6 +7,14 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    var locale: Locale {
+        switch self {
+        case .system: .current
+        case .english: Locale(identifier: "en_US")
+        case .simplifiedChinese: Locale(identifier: "zh_Hans_CN")
+        }
+    }
+
     var displayName: String {
         switch self {
         case .system: L10n.text("language.system")
