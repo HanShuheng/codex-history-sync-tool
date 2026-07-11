@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="CodexHistorySync"
-BUNDLE_ID="com.godgod126.CodexHistorySync"
+BUNDLE_ID="com.hanshuheng.CodexHistorySync"
 MINIMUM_MACOS="13.0"
 APP="$ROOT/dist/$APP_NAME.app"
 ARCHIVE="$ROOT/dist/$APP_NAME.zip"

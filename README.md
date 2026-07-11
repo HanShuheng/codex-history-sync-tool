@@ -47,7 +47,7 @@ The release is a self-contained universal app for Apple Silicon and Intel Macs r
 Requirements: macOS 13+ and Xcode Command Line Tools.
 
 ```bash
-git clone https://github.com/GODGOD126/codex-history-sync-tool.git
+git clone https://github.com/HanShuheng/codex-history-sync-tool.git
 cd codex-history-sync-tool
 ./script/build_and_run.sh
 ```

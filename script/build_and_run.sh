@@ -21,7 +21,7 @@ if [[ -d "$RESOURCE_BUNDLE" ]]; then
 fi
 chmod +x "$BIN"
 /usr/libexec/PlistBuddy -c "Clear dict" "$APP/Contents/Info.plist" 2>/dev/null || true
-/usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string $APP_NAME" -c "Add :CFBundleIdentifier string com.godgod126.CodexHistorySync" -c "Add :CFBundleName string Codex History Sync" -c "Add :CFBundleDisplayName string Codex History Sync" -c "Add :CFBundleDevelopmentRegion string en" -c "Add :CFBundleLocalizations array" -c "Add :CFBundleLocalizations:0 string en" -c "Add :CFBundleLocalizations:1 string zh-Hans" -c "Add :CFBundlePackageType string APPL" -c "Add :LSHasLocalizedDisplayName bool true" -c "Add :LSMinimumSystemVersion string 13.0" -c "Add :NSPrincipalClass string NSApplication" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string $APP_NAME" -c "Add :CFBundleIdentifier string com.hanshuheng.CodexHistorySync" -c "Add :CFBundleName string Codex History Sync" -c "Add :CFBundleDisplayName string Codex History Sync" -c "Add :CFBundleDevelopmentRegion string en" -c "Add :CFBundleLocalizations array" -c "Add :CFBundleLocalizations:0 string en" -c "Add :CFBundleLocalizations:1 string zh-Hans" -c "Add :CFBundlePackageType string APPL" -c "Add :LSHasLocalizedDisplayName bool true" -c "Add :LSMinimumSystemVersion string 13.0" -c "Add :NSPrincipalClass string NSApplication" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "$APP/Contents/Info.plist"
 mkdir -p "$APP/Contents/Resources"
 for strings in "$ROOT"/macos/Resources/*.lproj/InfoPlist.strings; do
