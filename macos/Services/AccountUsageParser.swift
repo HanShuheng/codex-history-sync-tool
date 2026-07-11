@@ -24,6 +24,53 @@ enum AccountUsageParser {
 
 enum WarmupResponseParser {
     static func isComplete(_ data: Data) -> Bool {
-        String(decoding: data, as: UTF8.self).contains("response.completed")
+        (try? validate(data)) != nil
     }
+
+    static func validate(_ data: Data) throws {
+        var event: String?
+        var dataLines: [String] = []
+        for line in String(decoding: data, as: UTF8.self).split(omittingEmptySubsequences: false, whereSeparator: \.isNewline) {
+            let line = String(line).trimmingCharacters(in: CharacterSet(charactersIn: "\r"))
+            if line.isEmpty {
+                if try process(event: event, dataLines: dataLines) { return }
+                event = nil; dataLines.removeAll(); continue
+            }
+            if let value = line.stripPrefix("event:") { event = value.trimmingCharacters(in: .whitespaces) }
+            if let value = line.stripPrefix("data:") { dataLines.append(value.trimmingCharacters(in: .whitespaces)) }
+        }
+        if try process(event: event, dataLines: dataLines) { return }
+        throw AccountServiceError.warmupIncomplete
+    }
+
+    private static func process(event: String?, dataLines: [String]) throws -> Bool {
+        if let event, isTerminal(event) { return true }
+        let payload = dataLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        if payload == "[DONE]" { return true }
+        guard !payload.isEmpty, let object = try? JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any] else {
+            if let event, isError(event) { throw AccountServiceError.warmupFailed(event) }
+            return false
+        }
+        let type = (object["type"] as? String) ?? event
+        if let type, isTerminal(type) { return true }
+        if let type, isError(type) {
+            let message = ((object["error"] as? [String: Any])?["message"] as? String)
+                ?? (((object["response"] as? [String: Any])?["error"] as? [String: Any])?["message"] as? String)
+                ?? type
+            throw AccountServiceError.warmupFailed(message)
+        }
+        return false
+    }
+
+    private static func isTerminal(_ value: String) -> Bool {
+        ["response.completed", "response.done"].contains(value.trimmingCharacters(in: .whitespaces))
+    }
+
+    private static func isError(_ value: String) -> Bool {
+        ["error", "response.failed", "response.incomplete"].contains(value.trimmingCharacters(in: .whitespaces))
+    }
+}
+
+private extension String {
+    func stripPrefix(_ prefix: String) -> String? { hasPrefix(prefix) ? String(dropFirst(prefix.count)) : nil }
 }

@@ -68,10 +68,12 @@ struct AccountService: Sendable {
 
     func warmup(_ account: AccountRecord) async throws -> AccountRecord {
         guard var credentials = account.credentials else { throw AccountServiceError.credentialFile("账号凭据缺失，请重新登录。") }
+        let model = warmupModel()
         do {
-            try await sendWarmup(credentials)
-        } catch AccountServiceError.http(401) where credentials.refreshToken != nil {
-            credentials = try await refreshToken(credentials); try await sendWarmup(credentials)
+            try await sendWarmupWithFallback(credentials, model: model)
+        } catch AccountServiceError.warmupHTTP(let status, _) where (status == 401 || status == 403) && credentials.refreshToken != nil {
+            credentials = try await refreshToken(credentials)
+            try await sendWarmupWithFallback(credentials, model: model)
         }
         return try await withUsage(account, credentials: credentials)
     }
@@ -131,7 +133,12 @@ struct AccountService: Sendable {
         var updated = account; updated.credentials = credentials; updated.usage = try AccountUsageParser.snapshot(from: data); updated.lastRefresh = updated.usage?.capturedAt; updated.lastError = nil; updated.status = "active"; return updated
     }
 
-    private func sendWarmup(_ credentials: AccountCredentials) async throws {
+    private func sendWarmupWithFallback(_ credentials: AccountCredentials, model: String) async throws {
+        do { try await sendWarmup(credentials, model: model, message: "hi") }
+        catch { try await sendWarmup(credentials, model: model, message: "你好") }
+    }
+
+    private func sendWarmup(_ credentials: AccountCredentials, model: String, message: String) async throws {
         var request = URLRequest(url: warmupURL); request.httpMethod = "POST"; request.timeoutInterval = 90
         request.setValue("Bearer \(credentials.accessToken)", forHTTPHeaderField: "Authorization"); request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("https://chatgpt.com", forHTTPHeaderField: "Origin"); request.setValue("https://chatgpt.com/", forHTTPHeaderField: "Referer")
@@ -139,9 +146,34 @@ struct AccountService: Sendable {
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.setValue("codex_cli_rs/0.102.1", forHTTPHeaderField: "User-Agent")
         request.setValue("codex_cli_rs", forHTTPHeaderField: "originator")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["model": "gpt-5.3-codex", "instructions": "", "input": [["type": "message", "role": "user", "content": [["type": "input_text", "text": "hi"]]]], "stream": true, "store": false], options: [])
-        let (data, response) = try await URLSession.shared.data(for: request); guard let status = (response as? HTTPURLResponse)?.statusCode, 200..<300 ~= status else { throw AccountServiceError.http((response as? HTTPURLResponse)?.statusCode ?? 0) }
-        guard WarmupResponseParser.isComplete(data) else { throw AccountServiceError.warmupIncomplete }
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["model": model, "instructions": "", "input": [["type": "message", "role": "user", "content": [["type": "input_text", "text": message]]]], "stream": true, "store": false], options: [])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard 200..<300 ~= status else { throw warmupHTTPError(status: status, data: data) }
+        try WarmupResponseParser.validate(data)
+    }
+
+    private func warmupModel() -> String {
+        guard let text = try? String(contentsOf: paths.config, encoding: .utf8) else { return "gpt-5.3-codex" }
+        let value = text.split(whereSeparator: \.isNewline).lazy
+            .map(String.init)
+            .first { $0.trimmingCharacters(in: .whitespaces).hasPrefix("model ") || $0.trimmingCharacters(in: .whitespaces).hasPrefix("model=") }?
+            .split(separator: "=", maxSplits: 1).last?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+        return value?.isEmpty == false ? value! : "gpt-5.3-codex"
+    }
+
+    private func warmupHTTPError(status: Int, data: Data) -> AccountServiceError {
+        let message: String
+        if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let error = object["error"] as? [String: Any],
+           let detail = error["message"] as? String, !detail.isEmpty {
+            message = detail
+        } else {
+            message = "上游未提供错误详情"
+        }
+        return .warmupHTTP(status, message)
     }
 
     private func exchange(code: String, verifier: String, redirectURI: String) async throws -> OAuthTokens {

@@ -16,6 +16,14 @@ struct AccountPoolCheck {
         precondition(missing.primaryRemainPercent == nil && missing.secondaryRemainPercent == nil)
         precondition(!WarmupResponseParser.isComplete(Data("event: response.in_progress\n".utf8)))
         precondition(WarmupResponseParser.isComplete(Data("event: response.completed\ndata: {}\n".utf8)))
+        precondition(WarmupResponseParser.isComplete(Data("event: response.done\ndata: {}\n".utf8)))
+        precondition(WarmupResponseParser.isComplete(Data("data: [DONE]\n".utf8)))
+        do {
+            try WarmupResponseParser.validate(Data("event: response.failed\ndata: {\"error\":{\"message\":\"quota exceeded\"}}\n".utf8))
+            preconditionFailure("错误事件应该失败")
+        } catch AccountServiceError.warmupFailed(let message) {
+            precondition(message == "quota exceeded")
+        }
 
         let credentials = AccountCredentials(idToken: nil, accessToken: "access", refreshToken: nil, accountID: "account", workspaceID: "workspace")
         let auth = try JSONSerialization.jsonObject(with: CodexAuthFile.directJSON(credentials: credentials, accountID: "account")) as! [String: Any]

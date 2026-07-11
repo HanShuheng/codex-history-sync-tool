@@ -44,7 +44,7 @@ final class AccountStore: ObservableObject {
             for id in ids {
                 guard let account = self.accounts.first(where: { $0.id == id }) else { continue }
                 do { self.upsert(try await self.service.warmup(account)) }
-                catch { self.updateError(id, error.localizedDescription); failures.append(account.displayName) }
+                catch { let message = error.localizedDescription; self.updateError(id, message); failures.append("\(account.displayName)（\(message)）") }
             }
             self.message = failures.isEmpty ? "预热完成。" : "预热完成，失败 \(failures.count) 个：\(failures.joined(separator: "、"))"
         }
