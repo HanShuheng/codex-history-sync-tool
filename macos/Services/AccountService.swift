@@ -52,7 +52,7 @@ struct AccountService: Sendable {
             URLQueryItem(name: "id_token_add_organizations", value: "true"), URLQueryItem(name: "codex_cli_simplified_flow", value: "true"),
             URLQueryItem(name: "state", value: state), URLQueryItem(name: "originator", value: "codex_cli_rs")
         ]
-        let callback = try await OAuthCallback.wait(for: state, redirectURI: redirectURI, authorizationURL: components.url!)
+        let callback = try await OAuthCallback.wait(for: state, authorizationURL: components.url!)
         let tokens = try await exchange(code: callback.code, verifier: verifier, redirectURI: redirectURI)
         let accountID = claim(tokens.idToken, key: "chatgpt_account_id") ?? claim(tokens.accessToken, key: "chatgpt_account_id") ?? UUID().uuidString
         let credentials = AccountCredentials(idToken: tokens.idToken, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, accountID: accountID, workspaceID: claim(tokens.idToken, key: "workspace_id"))
@@ -155,11 +155,12 @@ struct AccountService: Sendable {
 private struct OAuthTokens { let idToken: String?; let accessToken: String; let refreshToken: String? }
 
 private enum OAuthCallback {
-    static func wait(for state: String, redirectURI: String, authorizationURL: URL) async throws -> (code: String, state: String) {
+    static func wait(for state: String, authorizationURL: URL) async throws -> (code: String, state: String) {
         try await withCheckedThrowingContinuation { continuation in
+            let gate = OAuthCallbackGate()
             let listener = try? NWListener(using: .tcp, on: 1455)
-            guard let listener else { continuation.resume(throwing: AccountServiceError.callback("无法监听登录回调端口 1455。")); return }
-            listener.stateUpdateHandler = { state in if case .failed(let error) = state { continuation.resume(throwing: AccountServiceError.callback(error.localizedDescription)); listener.cancel() } }
+            guard let listener else { gate.run { continuation.resume(throwing: AccountServiceError.callback("无法监听登录回调端口 1455。")) }; return }
+            listener.stateUpdateHandler = { state in if case .failed(let error) = state { gate.run { continuation.resume(throwing: AccountServiceError.callback(error.localizedDescription)) }; listener.cancel() } }
             listener.newConnectionHandler = { connection in
                 guard Self.isLoopback(connection.endpoint) else { connection.cancel(); return }
                 connection.start(queue: .global())
@@ -167,14 +168,14 @@ private enum OAuthCallback {
                     defer { connection.cancel(); listener.cancel() }
                     guard let data, let line = String(data: data, encoding: .utf8)?.split(separator: "\r\n").first,
                           let path = line.split(separator: " ").dropFirst().first,
-                          let components = URLComponents(string: "http://localhost\(path)") else { continuation.resume(throwing: AccountServiceError.callback("登录回调格式无效。")); return }
+                          let components = URLComponents(string: "http://localhost\(path)") else { gate.run { continuation.resume(throwing: AccountServiceError.callback("登录回调格式无效。")) }; return }
                     let query = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value ?? "") })
                     let response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n登录完成，请返回 CodexHistorySync。"
                     connection.send(content: response.data(using: .utf8), completion: .contentProcessed { _ in })
-                    guard query["state"] == state else { continuation.resume(throwing: AccountServiceError.callback("登录回调 state 校验失败。")); return }
-                    if let error = query["error"], !error.isEmpty { continuation.resume(throwing: AccountServiceError.callback("登录失败：\(error)")); return }
-                    guard let code = query["code"], !code.isEmpty else { continuation.resume(throwing: AccountServiceError.callback("登录回调缺少 code。")); return }
-                    continuation.resume(returning: (code, state))
+                    guard query["state"] == state else { gate.run { continuation.resume(throwing: AccountServiceError.callback("登录回调 state 校验失败。")) }; return }
+                    if let error = query["error"], !error.isEmpty { gate.run { continuation.resume(throwing: AccountServiceError.callback("登录失败：\(error)")) }; return }
+                    guard let code = query["code"], !code.isEmpty else { gate.run { continuation.resume(throwing: AccountServiceError.callback("登录回调缺少 code。")) }; return }
+                    gate.run { continuation.resume(returning: (code, state)) }
                 }
             }
             listener.start(queue: .global()); NSWorkspace.shared.open(authorizationURL)

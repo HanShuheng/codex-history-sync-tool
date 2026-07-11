@@ -24,6 +24,16 @@ struct AccountPoolCheck {
         precondition(tokens["access_token"] as? String == "access")
         precondition(tokens["id_token"] as? String == "")
         precondition(tokens["refresh_token"] as? String == "")
+
+        let gate = OAuthCallbackGate()
+        let counterLock = NSLock()
+        var callbackCount = 0
+        DispatchQueue.concurrentPerform(iterations: 100) { _ in
+            gate.run {
+                counterLock.lock(); callbackCount += 1; counterLock.unlock()
+            }
+        }
+        precondition(callbackCount == 1)
         print("账号池边界自检通过")
     }
 }
