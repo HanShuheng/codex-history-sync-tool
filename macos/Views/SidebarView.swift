@@ -48,9 +48,9 @@ struct SidebarView: View {
             }
             Section(localization.text("sidebar.projects")) {
                 ForEach(projects, id: \.self) { path in
-                    Label(URL(fileURLWithPath: path).lastPathComponent, systemImage: "folder")
+                    Label(path == AppConstants.unassignedProjectIdentifier ? localization.text("project.unassigned") : URL(fileURLWithPath: path).lastPathComponent, systemImage: "folder")
                         .tag(SidebarSelection.project(path))
-                        .help(path)
+                        .help(path == AppConstants.unassignedProjectIdentifier ? localization.text("project.unassigned") : path)
                 }
             }
         }

@@ -5,6 +5,8 @@
 "nav.backups" = "Backups";
 "sidebar.manage" = "Manage";
 "sidebar.projects" = "Projects";
+"project.unassigned" = "Unassigned Project";
+"value.empty" = "(empty)";
 "history.all" = "All History";
 "history.count" = "%d conversations";
 "history.search" = "Search conversations";
@@ -35,3 +37,9 @@
 "common.delete" = "Delete";
 "error.title" = "Operation Failed";
 "error.unknown" = "Unknown error";
+"error.database.open" = "The Codex history database could not be opened.";
+"error.database.operation" = "The Codex history database operation failed.";
+"error.backup.create" = "The database backup could not be created.";
+"error.backup.invalidName" = "An invalid backup name was found. Nothing was deleted.";
+"error.selection.required" = "Select at least one conversation.";
+"error.config.providerMissing" = "model_provider is missing from config.toml.";

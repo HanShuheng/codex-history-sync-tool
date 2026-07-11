@@ -13,7 +13,6 @@ swift build
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 cp "$(swift build --show-bin-path)/$APP_NAME" "$BIN"
-cp history_manager.py sync_backend.py "$APP/Contents/"
 RESOURCE_BUNDLE="$(swift build --show-bin-path)/${APP_NAME}_${APP_NAME}.bundle"
 if [[ -d "$RESOURCE_BUNDLE" ]]; then
   rm -rf "$APP/Contents/Resources"
@@ -40,6 +39,7 @@ for size in 16 32 128 256 512; do
   sips -z "$double" "$double" "$ICON_SOURCE" --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
+codesign --force --sign - "$APP"
 
 case "$MODE" in
   run) open -n "$APP" ;;

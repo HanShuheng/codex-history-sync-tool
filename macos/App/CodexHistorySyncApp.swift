@@ -36,9 +36,9 @@ struct MainView: View {
             if phase == .background { store.persistSelections(immediately: true) }
         }
         .onDisappear { store.persistSelections(immediately: true) }
-        .alert(localization.text("error.title"), isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
-            Button(localization.text("common.ok")) { store.error = nil }
-        } message: { Text(store.error ?? localization.text("error.unknown")) }
+        .alert(localization.text("error.title"), isPresented: Binding(get: { store.errorKey != nil }, set: { if !$0 { store.errorKey = nil } })) {
+            Button(localization.text("common.ok")) { store.errorKey = nil }
+        } message: { Text(localization.text(store.errorKey ?? "error.unknown")) }
     }
 }
 

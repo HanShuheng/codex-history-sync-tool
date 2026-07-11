@@ -7,7 +7,7 @@ final class AppStore: ObservableObject {
     @Published var selectedIDs = Set<String>()
     @Published var selectedBackups = Set<String>()
     @Published var busy = false
-    @Published var error: String?
+    @Published var errorKey: String?
     let client = BackendClient()
     private var selectionSaveTask: Task<Void, Never>?
 
@@ -25,11 +25,11 @@ final class AppStore: ObservableObject {
         let ids = selectedIDs
         selectionSaveTask = Task { [client] in
             if !immediately {
-                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                try? await Task.sleep(nanoseconds: AppConstants.selectionSaveDelay)
                 guard !Task.isCancelled else { return }
             }
             do { _ = try await client.saveSelections(ids) }
-            catch { self.error = error.localizedDescription }
+            catch { self.errorKey = Self.errorKey(for: error) }
         }
     }
 
@@ -57,8 +57,12 @@ final class AppStore: ObservableObject {
     private func execute(work: @escaping @Sendable () async throws -> Void) {
         busy = true
         Task {
-            do { try await work() } catch { self.error = error.localizedDescription }
+            do { try await work() } catch { self.errorKey = Self.errorKey(for: error) }
             busy = false
         }
+    }
+
+    private static func errorKey(for error: Error) -> String {
+        (error as? LocalizedServiceError)?.localizationKey ?? "error.unknown"
     }
 }
