@@ -121,7 +121,9 @@ struct AccountService: Sendable {
     private func withUsage(_ account: AccountRecord, credentials: AccountCredentials) async throws -> AccountRecord {
         var request = URLRequest(url: usageURL); request.httpMethod = "GET"; request.timeoutInterval = 30
         request.setValue("Bearer \(credentials.accessToken)", forHTTPHeaderField: "Authorization")
-        if let id = credentials.accountID ?? account.chatgptAccountID ?? credentials.workspaceID { request.setValue(id, forHTTPHeaderField: "ChatGPT-Account-ID") }
+        if let id = credentials.workspaceID ?? credentials.accountID ?? account.workspaceID ?? account.chatgptAccountID { request.setValue(id, forHTTPHeaderField: "ChatGPT-Account-ID") }
+        request.setValue("codex_cli_rs/0.102.1", forHTTPHeaderField: "User-Agent")
+        request.setValue("codex_cli_rs", forHTTPHeaderField: "originator")
         request.setValue("https://chatgpt.com", forHTTPHeaderField: "Origin")
         request.setValue("https://chatgpt.com/", forHTTPHeaderField: "Referer")
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -133,7 +135,10 @@ struct AccountService: Sendable {
         var request = URLRequest(url: warmupURL); request.httpMethod = "POST"; request.timeoutInterval = 90
         request.setValue("Bearer \(credentials.accessToken)", forHTTPHeaderField: "Authorization"); request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("https://chatgpt.com", forHTTPHeaderField: "Origin"); request.setValue("https://chatgpt.com/", forHTTPHeaderField: "Referer")
-        if let accountID = credentials.accountID ?? credentials.workspaceID { request.setValue(accountID, forHTTPHeaderField: "ChatGPT-Account-ID") }
+        if let accountID = credentials.workspaceID ?? credentials.accountID { request.setValue(accountID, forHTTPHeaderField: "ChatGPT-Account-ID") }
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.setValue("codex_cli_rs/0.102.1", forHTTPHeaderField: "User-Agent")
+        request.setValue("codex_cli_rs", forHTTPHeaderField: "originator")
         request.httpBody = try JSONSerialization.data(withJSONObject: ["model": "gpt-5.3-codex", "instructions": "", "input": [["type": "message", "role": "user", "content": [["type": "input_text", "text": "hi"]]]], "stream": true, "store": false], options: [])
         let (data, response) = try await URLSession.shared.data(for: request); guard let status = (response as? HTTPURLResponse)?.statusCode, 200..<300 ~= status else { throw AccountServiceError.http((response as? HTTPURLResponse)?.statusCode ?? 0) }
         guard WarmupResponseParser.isComplete(data) else { throw AccountServiceError.warmupIncomplete }

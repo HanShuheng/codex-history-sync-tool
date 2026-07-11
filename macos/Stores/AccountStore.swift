@@ -46,7 +46,7 @@ final class AccountStore: ObservableObject {
                 do { self.upsert(try await self.service.warmup(account)) }
                 catch { self.updateError(id, error.localizedDescription); failures.append(account.displayName) }
             }
-            self.message = failures.isEmpty ? "预热完成。" : "预热完成，失败 (failures.count) 个：\(failures.joined(separator: "、"))"
+            self.message = failures.isEmpty ? "预热完成。" : "预热完成，失败 \(failures.count) 个：\(failures.joined(separator: "、"))"
         }
     }
 
