@@ -71,6 +71,7 @@ DMG_WORK="$(mktemp -d)"
 DMG_ROOT="$DMG_WORK/root"
 RW_ARCHIVE="$DMG_WORK/$APP_NAME.rw.dmg"
 ATTACH_PLIST="$DMG_WORK/attach.plist"
+BACKGROUND="$DMG_WORK/background.png"
 VOLUME_NAME="$APP_NAME $APP_VERSION"
 MOUNT_POINT=""
 cleanup() {
@@ -81,6 +82,9 @@ trap cleanup EXIT
 mkdir -p "$DMG_ROOT"
 cp -R "$APP" "$DMG_ROOT/"
 ln -s /Applications "$DMG_ROOT/Applications"
+swift "$ROOT/script/dmg_background.swift" "$BACKGROUND"
+mkdir -p "$DMG_ROOT/.background"
+cp "$BACKGROUND" "$DMG_ROOT/.background/background.png"
 hdiutil create -volname "$VOLUME_NAME" -srcfolder "$DMG_ROOT" -ov -format UDRW "$RW_ARCHIVE"
 hdiutil attach -plist "$RW_ARCHIVE" -nobrowse -noautoopen > "$ATTACH_PLIST"
 for index in 0 1 2 3 4; do
@@ -100,6 +104,7 @@ tell application "Finder"
     set viewOptions to icon view options of container window
     set arrangement of viewOptions to not arranged
     set icon size of viewOptions to 128
+    set background picture of viewOptions to file ".background:background.png"
     set position of item "$APP_NAME.app" to {220, 260}
     set position of item "Applications" to {680, 260}
     close container window
