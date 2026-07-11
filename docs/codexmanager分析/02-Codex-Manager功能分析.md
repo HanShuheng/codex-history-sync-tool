@@ -62,11 +62,13 @@ HTTP 细节集中在 [`crates/service/src/usage/usage_http.rs`](https://github.c
 核心文件是 [`crates/service/src/account/account_warmup.rs`](https://github.com/qxcnm/Codex-Manager/blob/main/crates/service/src/account/account_warmup.rs)：
 
 - `warmup_accounts(account_ids, message)` 解析目标账号；空列表表示全部可用账号。
-- 默认消息为 `hi`，默认模型为 `gpt-5.3-codex`。
+- 默认消息为 `hi`。模型先从 Codex 模型目录获取，不使用已过时的硬编码模型。
 - 请求地址为 `https://chatgpt.com/backend-api/codex/responses`。
 - 每个账号单独执行；成功/失败聚合为 `requested/succeeded/failed/results`。
 - token 相关失败会先 refresh token，再重试一次。
 - 成功后调用 usage refresh，把预热后的真实窗口数据重新写回存储。
+
+模型选择的关键细节：Codex-Manager 先访问其 Codex 上游的模型目录，过滤 `supported_in_api=false`、空 slug 和 `hide/hidden/disabled/unavailable` 模型，再按 `sort_index ASC, updated_at DESC, slug ASC` 取第一项。模型目录没有稳定的 token 消耗字段，因此这代表“目录优先级最高的可用模型”，不能严谨地宣称是 token 成本最低模型。
 
 因此“预热后 5 小时额度刷新”不是本地把时间改成当前时间，而是让上游产生一次真实请求，然后重新读取上游 usage 响应。若上游策略未变化，界面必须如实显示原 reset 时间。
 

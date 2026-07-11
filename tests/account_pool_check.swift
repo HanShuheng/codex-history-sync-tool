@@ -12,6 +12,18 @@ struct AccountPoolCheck {
         precondition(snapshot.primaryResetsAt?.timeIntervalSince1970 == 1700000000)
         precondition(snapshot.secondaryResetsAt?.timeIntervalSince1970 == 1700000100.5)
 
+        let models = CodexModelCatalog.parse(Data("""
+        {"models":[
+          {"slug":"gpt-hidden","display_name":"Hidden","visibility":"hidden"},
+          {"slug":"gpt-unsupported","supported_in_api":false},
+          {"slug":"gpt-first","supported_in_api":true,"visibility":"list"},
+          {"slug":"gpt-second","supported_in_api":true,"visibility":"list"}
+        ]}
+        """.utf8))
+        precondition(CodexModelCatalog.selectPreferredModel(from: models) == "gpt-first")
+        precondition(CodexModelCatalog.selectPreferredModel(from: CodexModelCatalog.parse(Data("{\"data\":[{\"id\":\"legacy-model\"}]}".utf8))) == "legacy-model")
+        precondition(CodexModelCatalog.selectPreferredModel(from: CodexModelCatalog.parse(Data("{\"models\":[{\"slug\":\"hidden\",\"visibility\":\"hidden\"}]}".utf8))) == nil)
+
         let missing = try AccountUsageParser.snapshot(from: Data("{}".utf8), capturedAt: Date(timeIntervalSince1970: 2))
         precondition(missing.primaryRemainPercent == nil && missing.secondaryRemainPercent == nil)
         precondition(!WarmupResponseParser.isComplete(Data("event: response.in_progress\n".utf8)))

@@ -68,11 +68,16 @@ struct AccountService: Sendable {
 
     func warmup(_ account: AccountRecord) async throws -> AccountRecord {
         guard var credentials = account.credentials else { throw AccountServiceError.credentialFile("账号凭据缺失，请重新登录。") }
-        let model = warmupModel()
+        guard var model = await warmupModel(for: account, credentials: credentials) else {
+            throw AccountServiceError.modelUnavailable
+        }
         do {
             try await sendWarmupWithFallback(credentials, model: model)
         } catch AccountServiceError.warmupHTTP(let status, _) where (status == 401 || status == 403) && credentials.refreshToken != nil {
             credentials = try await refreshToken(credentials)
+            if let refreshedModel = await warmupModel(for: account, credentials: credentials) {
+                model = refreshedModel
+            }
             try await sendWarmupWithFallback(credentials, model: model)
         }
         return try await withUsage(account, credentials: credentials)
@@ -153,15 +158,26 @@ struct AccountService: Sendable {
         try WarmupResponseParser.validate(data)
     }
 
-    private func warmupModel() -> String {
-        guard let text = try? String(contentsOf: paths.config, encoding: .utf8) else { return "gpt-5.3-codex" }
+    private func warmupModel(for account: AccountRecord, credentials: AccountCredentials) async -> String? {
+        do {
+            let models = try await CodexModelCatalog.fetch(account: account, credentials: credentials)
+            // 目录明确返回但没有可用模型时，不使用可能已被禁用的本地模型。
+            return CodexModelCatalog.selectPreferredModel(from: models)
+        } catch {
+            // 目录请求失败才允许使用用户现有 Codex 配置作为回退。
+            return configuredWarmupModel()
+        }
+    }
+
+    private func configuredWarmupModel() -> String? {
+        guard let text = try? String(contentsOf: paths.config, encoding: .utf8) else { return nil }
         let value = text.split(whereSeparator: \.isNewline).lazy
             .map(String.init)
             .first { $0.trimmingCharacters(in: .whitespaces).hasPrefix("model ") || $0.trimmingCharacters(in: .whitespaces).hasPrefix("model=") }?
             .split(separator: "=", maxSplits: 1).last?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-        return value?.isEmpty == false ? value! : "gpt-5.3-codex"
+        return value?.isEmpty == false ? value : nil
     }
 
     private func warmupHTTPError(status: Int, data: Data) -> AccountServiceError {

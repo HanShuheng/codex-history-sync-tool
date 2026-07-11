@@ -9,6 +9,7 @@ swiftc -parse-as-library \
   macos/Models/AppPaths.swift \
   macos/Models/LocalConfig.swift \
   macos/Services/AccountServiceError.swift \
+  macos/Services/CodexModelCatalog.swift \
   macos/Services/AccountUsageParser.swift \
   macos/Services/CodexAuthFile.swift \
   macos/Services/LocalConfigStore.swift \
