@@ -71,10 +71,10 @@ final class AccountStore: ObservableObject {
             var syncMessage = ""
             if autoSync {
                 do {
-                    let result = try self.service.syncSelectedHistory()
-                    syncMessage = result.map { "已自动同步 \($0.updatedRows ?? 0) 条历史记录。" } ?? "没有选中的历史记录，未执行同步。"
+                    let result = try self.service.syncAllHistory()
+                    syncMessage = "已自动同步全部历史记录（更新 \(result.updatedRows ?? 0) 条）。"
                 } catch {
-                    syncMessage = "自动同步失败，请到历史记录页面手动同步。"
+                    syncMessage = "自动同步全部历史记录失败，请到历史记录页面手动同步。"
                 }
             }
             self.message = "已切换到 \(account.displayName)。\(syncMessage)请重启 Codex 使新登录态生效。"

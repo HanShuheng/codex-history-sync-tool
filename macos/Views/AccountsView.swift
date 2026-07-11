@@ -5,7 +5,6 @@ struct AccountsView: View {
     @ObservedObject var store: AccountStore
     @State private var showImport = false
     @State private var pendingSwitch: AccountRecord?
-    @State private var autoSyncAfterSwitch = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -23,6 +22,12 @@ struct AccountsView: View {
                 Button(localization.text("accounts.warmup")) { store.warmupSelectedOrAll() }.disabled(store.accounts.isEmpty || store.busy)
                 Text(localization.text("accounts.hint")).font(.caption).foregroundStyle(.secondary)
                 Spacer()
+                Toggle(localization.text("accounts.autoSyncAfterSwitch"), isOn: Binding(
+                    get: { store.autoSyncAfterAccountSwitch },
+                    set: { store.setAutoSyncAfterAccountSwitch($0) }
+                ))
+                .toggleStyle(.switch)
+                .help(localization.text("accounts.autoSyncHelp"))
             }
             Table(store.accounts, selection: $store.selectedIDs) {
                 TableColumn(localization.text("accounts.column.name")) { account in
@@ -42,7 +47,6 @@ struct AccountsView: View {
                 TableColumn(localization.text("accounts.column.action")) { account in
                     Button {
                         pendingSwitch = account
-                        autoSyncAfterSwitch = store.autoSyncAfterAccountSwitch
                     } label: {
                         Label(localization.text("accounts.switch"), systemImage: "arrow.triangle.2.circlepath")
                     }
@@ -58,17 +62,11 @@ struct AccountsView: View {
             Button(localization.text("accounts.import")) { store.importCurrent() }
         } message: { Text(localization.text("accounts.importMessage")) }
         .sheet(item: $pendingSwitch) { account in
-            SwitchAccountSheet(account: account, autoSync: Binding(
-                get: { autoSyncAfterSwitch },
-                set: {
-                    autoSyncAfterSwitch = $0
-                    store.setAutoSyncAfterAccountSwitch($0)
-                }
-            )) {
+            SwitchAccountSheet(account: account) {
                 pendingSwitch = nil
             } confirm: {
                 pendingSwitch = nil
-                store.switchTo(account, autoSync: autoSyncAfterSwitch)
+                store.switchTo(account, autoSync: store.autoSyncAfterAccountSwitch)
             }
         }
         .alert(localization.text("error.title"), isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
@@ -98,7 +96,6 @@ struct AccountsView: View {
 private struct SwitchAccountSheet: View {
     @EnvironmentObject private var localization: LocalizationStore
     let account: AccountRecord
-    @Binding var autoSync: Bool
     let cancel: () -> Void
     let confirm: () -> Void
 
@@ -111,8 +108,6 @@ private struct SwitchAccountSheet: View {
                 Text(account.email ?? account.id).font(.caption).foregroundStyle(.secondary)
             }
             Text(localization.text("accounts.switchSheetMessage")).font(.callout).foregroundStyle(.secondary)
-            Toggle(localization.text("accounts.autoSyncAfterSwitch"), isOn: $autoSync)
-            Text(localization.text("accounts.autoSyncHelp")).font(.caption).foregroundStyle(.secondary)
             HStack {
                 Spacer()
                 Button(localization.text("common.cancel"), action: cancel)

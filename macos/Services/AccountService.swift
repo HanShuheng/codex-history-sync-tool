@@ -33,10 +33,8 @@ struct AccountService: Sendable {
         try localConfig.saveAutoSyncAfterAccountSwitch(enabled)
     }
 
-    func syncSelectedHistory() throws -> OperationResult? {
-        let ids = try localConfig.load().selectedThreadIDs
-        guard !ids.isEmpty else { return nil }
-        return try HistoryService(paths: paths).sync(ids)
+    func syncAllHistory() throws -> OperationResult {
+        try HistoryService(paths: paths).syncAll()
     }
 
     func importCurrent() throws -> (AccountRecord, AccountCredentials) {

@@ -42,6 +42,10 @@ struct HistoryService: Sendable {
     }
 
     func sync(_ ids: Set<String>) throws -> OperationResult {
+        try sync(ids, includeArchived: false)
+    }
+
+    private func sync(_ ids: Set<String>, includeArchived: Bool) throws -> OperationResult {
         guard !ids.isEmpty else { throw LocalizedServiceError("error.selection.required") }
         let config = try Configuration(contentsOf: paths.config)
         guard let provider = config.provider else { throw LocalizedServiceError("error.config.providerMissing") }
@@ -49,13 +53,13 @@ struct HistoryService: Sendable {
         _ = try backup.create(label: "pre-selected-sync")
         let database = try SQLiteDatabase(url: paths.database)
         let columns = try threadColumns(database)
-        let activeIDs = try activeIDs(in: database, requested: ids, hasArchived: columns.contains("archived"))
+        let activeIDs = try activeIDs(in: database, requested: ids, hasArchived: columns.contains("archived") && !includeArchived)
         let placeholders = Array(repeating: "?", count: activeIDs.count).joined(separator: ",")
         var assignments = ["model_provider = ?"]
         var bindings = [provider]
         if let model = config.model, columns.contains("model") { assignments.append("model = ?"); bindings.append(model) }
         bindings.append(contentsOf: activeIDs.sorted())
-        let guardClause = columns.contains("archived") ? " AND archived = 0" : ""
+        let guardClause = columns.contains("archived") && !includeArchived ? " AND archived = 0" : ""
         let updated = try database.execute(
             "UPDATE threads SET \(assignments.joined(separator: ", ")) WHERE id IN (\(placeholders))\(guardClause)",
             bindings: bindings
@@ -65,6 +69,14 @@ struct HistoryService: Sendable {
         try sessions.rebuildIndex(using: database)
         _ = try saveSelections(activeIDs)
         return OperationResult(updatedRows: updated, updatedSessionFiles: sessionCount, selectedCount: activeIDs.count)
+    }
+
+    func syncAll() throws -> OperationResult {
+        let database = try SQLiteDatabase(url: paths.database, readOnly: true)
+        let rows = try database.query("SELECT id FROM threads")
+        let ids = Set(rows.compactMap { $0["id"]?.string })
+        guard !ids.isEmpty else { return OperationResult(updatedRows: 0, updatedSessionFiles: 0, selectedCount: 0) }
+        return try sync(ids, includeArchived: true)
     }
 
     private func activeIDs(in database: SQLiteDatabase, requested: Set<String>, hasArchived: Bool) throws -> Set<String> {
