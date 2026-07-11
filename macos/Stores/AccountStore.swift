@@ -42,18 +42,19 @@ final class AccountStore: ObservableObject {
     func warmupSelectedOrAll() {
         let ids = selectedIDs.isEmpty ? accounts.map(\.id) : Array(selectedIDs)
         execute {
+            var failures: [String] = []
             for id in ids {
                 guard let account = self.accounts.first(where: { $0.id == id }) else { continue }
                 do { self.upsert(try await self.service.warmup(account)) }
-                catch { self.updateError(id, error.localizedDescription) }
+                catch { self.updateError(id, error.localizedDescription); failures.append(account.displayName) }
             }
-            self.message = "预热完成。"
+            self.message = failures.isEmpty ? "预热完成。" : "预热完成，失败 (failures.count) 个：\(failures.joined(separator: "、"))"
         }
     }
 
     func switchTo(_ account: AccountRecord) {
         execute {
-            try self.service.switchTo(account)
+            try await self.service.switchTo(account)
             self.accounts = self.accounts.map { var item = $0; item.isCurrent = item.id == account.id; return item }
             try self.service.save(self.accounts)
             self.message = "已切换到 \(account.displayName)，请重启 Codex 使新登录态生效。"

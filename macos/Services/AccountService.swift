@@ -3,26 +3,6 @@ import CryptoKit
 import Foundation
 import Network
 
-enum AccountServiceError: LocalizedError {
-    case invalidAuthFile
-    case invalidTokenResponse
-    case callback(String)
-    case warmupIncomplete
-    case http(Int)
-    case keychain(OSStatus)
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidAuthFile: return "当前 auth.json 中没有可用的 Codex 登录 token。"
-        case .invalidTokenResponse: return "登录服务返回了无效 token。"
-        case .callback(let message): return message
-        case .warmupIncomplete: return "预热流在完成事件前结束。"
-        case .http(let status): return "上游请求失败（HTTP \(status)）。"
-        case .keychain: return "无法访问 macOS 钥匙串。"
-        }
-    }
-}
-
 struct AccountService: Sendable {
     let paths: AppPaths
     let keychain = KeychainStore()
@@ -100,26 +80,28 @@ struct AccountService: Sendable {
         return try await refresh(account)
     }
 
-    func switchTo(_ account: AccountRecord) throws {
-        let credentials = try keychain.read(for: account.id)
-        let original = FileManager.default.fileExists(atPath: paths.auth.path) ? try Data(contentsOf: paths.auth) : nil
-        let tokens: [String: Any] = [
-            "id_token": credentials.idToken ?? NSNull(), "access_token": credentials.accessToken,
-            "refresh_token": credentials.refreshToken ?? NSNull(), "account_id": credentials.accountID ?? account.id
-        ]
-        let object: [String: Any] = ["OPENAI_API_KEY": NSNull(), "tokens": tokens, "last_refresh": ISO8601DateFormatter().string(from: Date())]
-        try FileManager.default.createDirectory(at: paths.accountBackupDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-        if FileManager.default.fileExists(atPath: paths.auth.path) {
-            let backup = paths.accountBackupDirectory.appendingPathComponent("auth-\(Int(Date().timeIntervalSince1970)).json")
-            try FileManager.default.copyItem(at: paths.auth, to: backup)
-            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: backup.path)
+    func switchTo(_ account: AccountRecord) async throws {
+        var credentials = try keychain.read(for: account.id)
+        if credentials.refreshToken != nil {
+            credentials = try await refreshToken(credentials)
+            try keychain.save(credentials, for: account.id)
         }
-        let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]) + Data("\n".utf8)
-        try data.write(to: paths.auth, options: .atomic)
-        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: paths.auth.path)
-        guard ((try? jsonObject(at: paths.auth)["tokens"] as? [String: Any])?["access_token"] as? String) == credentials.accessToken else {
-            if let original { try? original.write(to: paths.auth, options: .atomic) }
-            throw AccountServiceError.invalidAuthFile
+        let original = FileManager.default.fileExists(atPath: paths.auth.path) ? try Data(contentsOf: paths.auth) : nil
+        let data = try CodexAuthFile.directJSON(credentials: credentials, accountID: account.id)
+        do {
+            try FileManager.default.createDirectory(at: paths.accountBackupDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            if FileManager.default.fileExists(atPath: paths.auth.path) {
+                let backup = paths.accountBackupDirectory.appendingPathComponent("auth-\(Int(Date().timeIntervalSince1970 * 1000)).json")
+                try FileManager.default.copyItem(at: paths.auth, to: backup)
+                try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: backup.path)
+            }
+            try data.write(to: paths.auth, options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: paths.auth.path)
+            guard ((try? jsonObject(at: paths.auth)["tokens"] as? [String: Any])?["access_token"] as? String) == credentials.accessToken else { throw AccountServiceError.invalidAuthFile }
+        } catch {
+            if let original { try? original.write(to: paths.auth, options: .atomic); try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: paths.auth.path) }
+            else { try? FileManager.default.removeItem(at: paths.auth) }
+            throw error
         }
     }
 
@@ -131,10 +113,7 @@ struct AccountService: Sendable {
         request.setValue("https://chatgpt.com/", forHTTPHeaderField: "Referer")
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let status = (response as? HTTPURLResponse)?.statusCode, 200..<300 ~= status else { throw AccountServiceError.http((response as? HTTPURLResponse)?.statusCode ?? 0) }
-        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
-        let rate = json["rate_limit"] as? [String: Any]
-        let primary = window(rate?["primary_window"] as? [String: Any]); let secondary = window(rate?["secondary_window"] as? [String: Any])
-        var updated = account; updated.usage = AccountUsageSnapshot(primaryRemainPercent: primary.remain, primaryResetsAt: primary.reset, secondaryRemainPercent: secondary.remain, secondaryResetsAt: secondary.reset, capturedAt: Date()); updated.lastRefresh = Date(); updated.lastError = nil; updated.status = "active"; return updated
+        var updated = account; updated.usage = try AccountUsageParser.snapshot(from: data); updated.lastRefresh = updated.usage?.capturedAt; updated.lastError = nil; updated.status = "active"; return updated
     }
 
     private func sendWarmup(_ credentials: AccountCredentials) async throws {
@@ -144,7 +123,7 @@ struct AccountService: Sendable {
         if let accountID = credentials.accountID ?? credentials.workspaceID { request.setValue(accountID, forHTTPHeaderField: "ChatGPT-Account-ID") }
         request.httpBody = try JSONSerialization.data(withJSONObject: ["model": "gpt-5.3-codex", "instructions": "", "input": [["type": "message", "role": "user", "content": [["type": "input_text", "text": "hi"]]]], "stream": true, "store": false], options: [])
         let (data, response) = try await URLSession.shared.data(for: request); guard let status = (response as? HTTPURLResponse)?.statusCode, 200..<300 ~= status else { throw AccountServiceError.http((response as? HTTPURLResponse)?.statusCode ?? 0) }
-        guard String(decoding: data, as: UTF8.self).contains("response.completed") else { throw AccountServiceError.warmupIncomplete }
+        guard WarmupResponseParser.isComplete(data) else { throw AccountServiceError.warmupIncomplete }
     }
 
     private func exchange(code: String, verifier: String, redirectURI: String) async throws -> OAuthTokens {
@@ -171,7 +150,6 @@ struct AccountService: Sendable {
     private func jsonObject(at url: URL) throws -> [String: Any] { guard let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any] else { throw AccountServiceError.invalidAuthFile }; return object }
     private func claim(_ token: String?, key: String) -> String? { guard let token, let part = token.split(separator: ".").dropFirst().first else { return nil }; var raw = String(part).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/"); raw += String(repeating: "=", count: (4 - raw.count % 4) % 4); guard let data = Data(base64Encoded: raw), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }; return (object[key] as? String) ?? ((object["https://api.openai.com/auth"] as? [String: Any])?[key] as? String) }
     private func randomString(byteCount: Int) -> String { Data((0..<byteCount).map { _ in UInt8.random(in: 0...255) }).base64URLEncodedString() }
-    private func window(_ value: [String: Any]?) -> (remain: Double?, reset: Date?) { let used = value?["used_percent"] as? Double; let reset = (value?["reset_at"] as? Double).map(Date.init(timeIntervalSince1970:)); return (used.map { max(0, min(100, 100 - $0)) }, reset) }
 }
 
 private struct OAuthTokens { let idToken: String?; let accessToken: String; let refreshToken: String? }

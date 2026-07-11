@@ -34,7 +34,11 @@ struct AccountsView: View {
                 TableColumn(localization.text("accounts.column.plan")) { account in Text(account.plan ?? localization.text("value.unknown")) }
                 TableColumn(localization.text("accounts.column.fiveHour")) { account in usageText(account.usage?.primaryRemainPercent, reset: account.usage?.primaryResetsAt) }
                 TableColumn(localization.text("accounts.column.sevenDay")) { account in usageText(account.usage?.secondaryRemainPercent, reset: account.usage?.secondaryResetsAt) }
-                TableColumn(localization.text("accounts.column.status")) { account in Text(account.status == "active" ? localization.text("accounts.active") : account.status).foregroundStyle(account.status == "active" ? .green : .orange) }
+                TableColumn(localization.text("accounts.column.status")) { account in
+                    Text(account.status == "active" ? localization.text("accounts.active") : account.status)
+                        .foregroundStyle(account.status == "active" ? .green : .orange)
+                        .help(account.lastError ?? "")
+                }
                 TableColumn(localization.text("accounts.column.action")) { account in Button(localization.text("accounts.switch")) { pendingSwitch = account; showSwitchConfirmation = true }.disabled(account.isCurrent) }
             }
         }
