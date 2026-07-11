@@ -1,0 +1,36 @@
+# Build and editor artifacts
+.build/
+dist/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
+.DS_Store
+__pycache__/
+*.py[cod]
+
+# Local tooling
+.codegraph/
+.codex/
+
+# Private Codex data: never commit conversations, configuration, or backups
+.env
+.env.*
+!.env.example
+config.toml
+state_*.sqlite*
+sessions/
+session_index.jsonl
+rollout-*.jsonl
+history_sync_backups/
+history_manager_selections.json
+*.bak
+
+# Credentials, certificates, and signing material
+*.key
+*.pem
+*.p12
+*.mobileprovision
+*.cer
+*.provisionprofile

@@ -1,0 +1,48 @@
+import SwiftUI
+
+struct MainView: View {
+    @EnvironmentObject private var localization: LocalizationStore
+    @StateObject private var store = AppStore()
+    @State private var workspace = Workspace.history
+    @State private var project = ""
+    var body: some View {
+        NavigationSplitView {
+            SidebarView(store: store, workspace: $workspace, project: $project)
+                .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
+        } detail: {
+            Group {
+                switch workspace {
+                case .history: HistoryView(store: store, project: project)
+                case .backups: BackupView(store: store)
+                }
+            }
+            .navigationTitle(localization.text(workspace == .history ? "nav.history" : "nav.backups"))
+        }
+        .frame(minWidth: 960, minHeight: 620)
+        .overlay { if store.busy { ProgressView().controlSize(.large) } }
+        .toolbar {
+            Picker(localization.text("settings.language"), selection: $localization.language) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language == .system ? localization.text("language.system") : language.displayName)
+                        .tag(language)
+                }
+            }
+            .pickerStyle(.menu)
+            .help(localization.text("settings.language"))
+        }
+        .task { store.load() }
+        .alert(localization.text("error.title"), isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
+            Button(localization.text("common.ok")) { store.error = nil }
+        } message: { Text(store.error ?? localization.text("error.unknown")) }
+    }
+}
+
+@main
+struct CodexHistorySyncApp: App {
+    @StateObject private var localization = LocalizationStore()
+
+    var body: some Scene {
+        WindowGroup { MainView().environmentObject(localization) }
+        Settings { SettingsView().environmentObject(localization) }
+    }
+}
