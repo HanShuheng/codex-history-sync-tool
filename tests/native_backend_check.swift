@@ -17,6 +17,12 @@ struct NativeBackendCheck {
         precondition(result.updatedRows == 1)
         let rows = try SQLiteDatabase(url: paths.database, readOnly: true).query("SELECT model_provider FROM threads ORDER BY id")
         precondition(rows.map { $0["model_provider"]?.string } == ["current", "old"])
+        let usage = AccountUsageSnapshot(primaryRemainPercent: 75, primaryResetsAt: nil, secondaryRemainPercent: 50, secondaryResetsAt: nil, capturedAt: Date())
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let encodedUsage = try encoder.encode(usage)
+        precondition(!encodedUsage.isEmpty)
+        _ = try decoder.decode(AccountUsageSnapshot.self, from: encodedUsage)
         print("原生后端自检通过")
     }
 }

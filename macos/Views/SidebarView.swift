@@ -3,11 +3,13 @@ import SwiftUI
 enum Workspace: Hashable {
     case history
     case backups
+    case accounts
 }
 
 private enum SidebarSelection: Hashable {
     case history
     case backups
+    case accounts
     case project(String)
 }
 
@@ -25,12 +27,14 @@ struct SidebarView: View {
         Binding(
             get: {
                 if workspace == .backups { return .backups }
+                if workspace == .accounts { return .accounts }
                 return project.isEmpty ? .history : .project(project)
             },
             set: { selected in
                 switch selected {
                 case .history: workspace = .history; project = ""
                 case .backups: workspace = .backups
+                case .accounts: workspace = .accounts; project = ""
                 case .project(let path): workspace = .history; project = path
                 case nil: break
                 }
@@ -45,6 +49,8 @@ struct SidebarView: View {
                     .tag(SidebarSelection.history)
                 Label(localization.text("nav.backups"), systemImage: "externaldrive")
                     .tag(SidebarSelection.backups)
+                Label(localization.text("nav.accounts"), systemImage: "person.3")
+                    .tag(SidebarSelection.accounts)
             }
             Section(localization.text("sidebar.projects")) {
                 ForEach(projects, id: \.self) { path in

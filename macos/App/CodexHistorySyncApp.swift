@@ -9,6 +9,7 @@ struct MainView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store = AppStore()
+    @StateObject private var accountStore = AccountStore()
     @State private var workspace = Workspace.history
     @State private var project = ""
     var body: some View {
@@ -20,9 +21,10 @@ struct MainView: View {
                 switch workspace {
                 case .history: HistoryView(store: store, project: project)
                 case .backups: BackupView(store: store)
+                case .accounts: AccountsView(store: accountStore)
                 }
             }
-            .navigationTitle(localization.text(workspace == .history ? "nav.history" : "nav.backups"))
+            .navigationTitle(localization.text(workspace == .history ? "nav.history" : workspace == .backups ? "nav.backups" : "nav.accounts"))
         }
         .frame(minWidth: 960, minHeight: 620)
         .overlay { if store.busy { ProgressView().controlSize(.large) } }
@@ -36,7 +38,7 @@ struct MainView: View {
             .pickerStyle(.menu)
             .help(localization.text("settings.language"))
         }
-        .task { store.load() }
+        .task { store.load(); accountStore.load() }
         .onChange(of: scenePhase) { phase in
             if phase == .background { store.persistSelections(immediately: true) }
         }
