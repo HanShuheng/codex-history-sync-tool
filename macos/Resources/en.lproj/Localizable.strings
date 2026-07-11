@@ -9,7 +9,8 @@
 "history.count" = "%d conversations";
 "history.search" = "Search conversations";
 "history.unsyncedOnly" = "Unsynced only";
-"history.saveSelection" = "Save Selection";
+"history.selectAll" = "Select All";
+"history.deselectAll" = "Deselect All";
 "history.syncSelected" = "Sync Selected (%d)";
 "table.task" = "Conversation";
 "table.assignment" = "Provider";

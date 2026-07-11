@@ -30,7 +30,6 @@ struct HistoryView: View {
                     TextField(localization.text("history.search"), text: $search).textFieldStyle(.roundedBorder).frame(maxWidth: 280)
                     Toggle(localization.text("history.unsyncedOnly"), isOn: $currentOnly).toggleStyle(.switch)
                     Spacer()
-                    Button(localization.text("history.saveSelection")) { store.persistSelections() }
                     Button(String(format: localization.text("history.syncSelected"), store.selectedIDs.count)) { showSyncConfirmation = true }
                         .buttonStyle(.borderedProminent).disabled(store.selectedIDs.isEmpty)
                 }.padding()
@@ -47,7 +46,19 @@ struct HistoryView: View {
                     TableColumn(localization.text("table.status")) { item in
                         Text(localization.text(item.isCurrent ? "status.current" : "status.pending")).foregroundStyle(item.isCurrent ? .green : .orange)
                     }.width(90)
-                    TableColumn(localization.text("table.updated"), value: \.updatedAt).width(150)
+                    TableColumn(localization.text("table.updated")) { item in
+                        Text(item.updatedAt.replacingOccurrences(of: "T", with: " "))
+                    }.width(160)
+                }
+                .overlay(alignment: .topLeading) {
+                    Button(action: toggleAll) {
+                        Image(systemName: selectionIcon)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(threads.isEmpty)
+                    .help(localization.text(allVisibleSelected ? "history.deselectAll" : "history.selectAll"))
+                    .padding(.leading, 16)
+                    .padding(.top, 8)
                 }
         }
         .alert(localization.text("sync.confirmTitle"), isPresented: $showSyncConfirmation) {
@@ -56,12 +67,29 @@ struct HistoryView: View {
         } message: { Text(String(format: localization.text("sync.confirmMessage"), store.selectedIDs.count)) }
     }
 
+    private var allVisibleSelected: Bool {
+        !threads.isEmpty && threads.allSatisfy { store.selectedIDs.contains($0.id) }
+    }
+
+    private var selectionIcon: String {
+        allVisibleSelected ? "checkmark.square.fill" :
+            threads.contains { store.selectedIDs.contains($0.id) } ? "minus.square.fill" : "square"
+    }
+
+    private func toggleAll() {
+        let ids = Set(threads.map(\.id))
+        if allVisibleSelected { store.selectedIDs.subtract(ids) }
+        else { store.selectedIDs.formUnion(ids) }
+        store.persistSelections()
+    }
+
     private func selectionBinding(for item: ThreadItem) -> Binding<Bool> {
         Binding(
             get: { store.selectedIDs.contains(item.id) },
             set: { selected in
                 if selected { store.selectedIDs.insert(item.id) }
                 else { store.selectedIDs.remove(item.id) }
+                store.persistSelections()
             }
         )
     }

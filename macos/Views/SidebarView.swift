@@ -5,6 +5,12 @@ enum Workspace: Hashable {
     case backups
 }
 
+private enum SidebarSelection: Hashable {
+    case history
+    case backups
+    case project(String)
+}
+
 struct SidebarView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @ObservedObject var store: AppStore
@@ -15,21 +21,35 @@ struct SidebarView: View {
         Array(Set(store.response?.threads.map(\.project) ?? [])).sorted()
     }
 
+    private var selection: Binding<SidebarSelection?> {
+        Binding(
+            get: {
+                if workspace == .backups { return .backups }
+                return project.isEmpty ? .history : .project(project)
+            },
+            set: { selected in
+                switch selected {
+                case .history: workspace = .history; project = ""
+                case .backups: workspace = .backups
+                case .project(let path): workspace = .history; project = path
+                case nil: break
+                }
+            }
+        )
+    }
+
     var body: some View {
-        List {
+        List(selection: selection) {
             Section(localization.text("sidebar.manage")) {
                 Label(localization.text("nav.history"), systemImage: "bubble.left.and.bubble.right")
-                    .contentShape(Rectangle()).onTapGesture { workspace = .history; project = "" }
-                    .listRowBackground(workspace == .history && project.isEmpty ? Color.accentColor.opacity(0.16) : Color.clear)
+                    .tag(SidebarSelection.history)
                 Label(localization.text("nav.backups"), systemImage: "externaldrive")
-                    .contentShape(Rectangle()).onTapGesture { workspace = .backups }
-                    .listRowBackground(workspace == .backups ? Color.accentColor.opacity(0.16) : Color.clear)
+                    .tag(SidebarSelection.backups)
             }
             Section(localization.text("sidebar.projects")) {
                 ForEach(projects, id: \.self) { path in
                     Label(URL(fileURLWithPath: path).lastPathComponent, systemImage: "folder")
-                        .contentShape(Rectangle()).onTapGesture { workspace = .history; project = path }
-                        .listRowBackground(workspace == .history && project == path ? Color.accentColor.opacity(0.16) : Color.clear)
+                        .tag(SidebarSelection.project(path))
                         .help(path)
                 }
             }

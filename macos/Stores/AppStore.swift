@@ -9,6 +9,7 @@ final class AppStore: ObservableObject {
     @Published var busy = false
     @Published var error: String?
     let client = BackendClient()
+    private var selectionSaveTask: Task<Void, Never>?
 
     func load() { execute { [self] in
         async let threadsRequest = client.threads(), backupsRequest = client.backups()
@@ -19,11 +20,18 @@ final class AppStore: ObservableObject {
         }
     } }
 
-    func persistSelections() {
+    func persistSelections(immediately: Bool = false) {
+        selectionSaveTask?.cancel()
         let ids = selectedIDs
-        execute { [self] in
-        _ = try await client.saveSelections(ids)
-    } }
+        selectionSaveTask = Task { [client] in
+            if !immediately {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard !Task.isCancelled else { return }
+            }
+            do { _ = try await client.saveSelections(ids) }
+            catch { self.error = error.localizedDescription }
+        }
+    }
 
     func syncSelected() {
         let ids = selectedIDs

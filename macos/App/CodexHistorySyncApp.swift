@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainView: View {
     @EnvironmentObject private var localization: LocalizationStore
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store = AppStore()
     @State private var workspace = Workspace.history
     @State private var project = ""
@@ -31,6 +32,10 @@ struct MainView: View {
             .help(localization.text("settings.language"))
         }
         .task { store.load() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .background { store.persistSelections(immediately: true) }
+        }
+        .onDisappear { store.persistSelections(immediately: true) }
         .alert(localization.text("error.title"), isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
             Button(localization.text("common.ok")) { store.error = nil }
         } message: { Text(store.error ?? localization.text("error.unknown")) }
