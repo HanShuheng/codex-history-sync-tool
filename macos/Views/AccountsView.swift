@@ -4,8 +4,9 @@ struct AccountsView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @ObservedObject var store: AccountStore
     @State private var showImport = false
-    @State private var showSwitchConfirmation = false
+    @State private var showSwitchSheet = false
     @State private var pendingSwitch: AccountRecord?
+    @State private var autoSyncAfterSwitch = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -32,14 +33,24 @@ struct AccountsView: View {
                     }
                 }.width(min: 220, ideal: 280)
                 TableColumn(localization.text("accounts.column.plan")) { account in Text(account.plan ?? localization.text("value.unknown")) }
-                TableColumn(localization.text("accounts.column.fiveHour")) { account in usageText(account.usage?.primaryRemainPercent, reset: account.usage?.primaryResetsAt) }
-                TableColumn(localization.text("accounts.column.sevenDay")) { account in usageText(account.usage?.secondaryRemainPercent, reset: account.usage?.secondaryResetsAt) }
+                TableColumn(localization.text("accounts.column.fiveHour")) { account in usageText(account.usage?.primaryRemainPercent, reset: account.usage?.primaryResetsAt, tint: .green) }
+                TableColumn(localization.text("accounts.column.sevenDay")) { account in usageText(account.usage?.secondaryRemainPercent, reset: account.usage?.secondaryResetsAt, tint: .blue) }
                 TableColumn(localization.text("accounts.column.status")) { account in
                     Text(account.status == "active" ? localization.text("accounts.active") : account.status)
                         .foregroundStyle(account.status == "active" ? .green : .orange)
                         .help(account.lastError ?? "")
                 }
-                TableColumn(localization.text("accounts.column.action")) { account in Button(localization.text("accounts.switch")) { pendingSwitch = account; showSwitchConfirmation = true }.disabled(account.isCurrent) }
+                TableColumn(localization.text("accounts.column.action")) { account in
+                    Button {
+                        pendingSwitch = account
+                        autoSyncAfterSwitch = store.autoSyncAfterAccountSwitch
+                        showSwitchSheet = true
+                    } label: {
+                        Label(localization.text("accounts.switch"), systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(account.isCurrent)
+                }
             }
         }
         .padding(20)
@@ -48,10 +59,22 @@ struct AccountsView: View {
             Button(localization.text("common.cancel"), role: .cancel) {}
             Button(localization.text("accounts.import")) { store.importCurrent() }
         } message: { Text(localization.text("accounts.importMessage")) }
-        .alert(localization.text("accounts.switchTitle"), isPresented: $showSwitchConfirmation) {
-            Button(localization.text("common.cancel"), role: .cancel) {}
-            Button(localization.text("accounts.switch"), role: .destructive) { if let pendingSwitch { store.switchTo(pendingSwitch) } }
-        } message: { Text(localization.text("accounts.switchMessage")) }
+        .sheet(isPresented: $showSwitchSheet) {
+            if let pendingSwitch {
+                SwitchAccountSheet(account: pendingSwitch, autoSync: Binding(
+                    get: { autoSyncAfterSwitch },
+                    set: {
+                        autoSyncAfterSwitch = $0
+                        store.setAutoSyncAfterAccountSwitch($0)
+                    }
+                )) {
+                    showSwitchSheet = false
+                } confirm: {
+                    showSwitchSheet = false
+                    store.switchTo(pendingSwitch, autoSync: autoSyncAfterSwitch)
+                }
+            }
+        }
         .alert(localization.text("error.title"), isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
             Button(localization.text("common.ok")) { store.error = nil }
         } message: { Text(store.error ?? "") }
@@ -60,10 +83,47 @@ struct AccountsView: View {
         } message: { Text(store.message ?? "") }
     }
 
-    private func usageText(_ percent: Double?, reset: Date?) -> some View {
-        VStack(alignment: .leading) {
-            Text(percent.map { String(format: "%.0f%%", $0) } ?? localization.text("value.unknown"))
+    private func usageText(_ percent: Double?, reset: Date?, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(percent.map { String(format: "%.0f%%", $0) } ?? localization.text("value.unknown"))
+                Spacer(minLength: 0)
+            }
+            if let percent {
+                ProgressView(value: max(0, min(100, percent)), total: 100)
+                    .progressViewStyle(.linear)
+                    .tint(tint)
+            }
             if let reset { Text(localization.date(ISO8601DateFormatter().string(from: reset))).font(.caption).foregroundStyle(.secondary) }
         }
+    }
+}
+
+private struct SwitchAccountSheet: View {
+    @EnvironmentObject private var localization: LocalizationStore
+    let account: AccountRecord
+    @Binding var autoSync: Bool
+    let cancel: () -> Void
+    let confirm: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Label(localization.text("accounts.switchSheetTitle"), systemImage: "person.crop.circle.badge.arrow.right")
+                .font(.title3.bold())
+            VStack(alignment: .leading, spacing: 3) {
+                Text(account.displayName).font(.headline)
+                Text(account.email ?? account.id).font(.caption).foregroundStyle(.secondary)
+            }
+            Text(localization.text("accounts.switchSheetMessage")).font(.callout).foregroundStyle(.secondary)
+            Toggle(localization.text("accounts.autoSyncAfterSwitch"), isOn: $autoSync)
+            Text(localization.text("accounts.autoSyncHelp")).font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button(localization.text("common.cancel"), action: cancel)
+                Button(localization.text("accounts.switch"), action: confirm).buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(24)
+        .frame(width: 430)
     }
 }

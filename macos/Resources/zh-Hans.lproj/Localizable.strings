@@ -29,6 +29,10 @@
 "accounts.importMessage" = "将读取 ~/.codex/auth.json，并把登录凭据保存到 ~/.codexhistorysync/config.json。";
 "accounts.switchTitle" = "切换 Codex 账号？";
 "accounts.switchMessage" = "切换前会备份当前 auth.json；切换后请重启 Codex 使新登录态生效。";
+"accounts.switchSheetTitle" = "切换账号";
+"accounts.switchSheetMessage" = "将把这个账号写入 Codex 当前登录配置。";
+"accounts.autoSyncAfterSwitch" = "切换后自动同步已选历史记录";
+"accounts.autoSyncHelp" = "只同步历史记录页面中已勾选的对话；默认关闭。";
 "accounts.done" = "账号操作完成";
 "history.all" = "全部历史";
 "history.count" = "%d 条对话";

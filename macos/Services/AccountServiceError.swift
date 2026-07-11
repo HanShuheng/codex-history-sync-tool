@@ -8,6 +8,7 @@ enum AccountServiceError: LocalizedError {
     case warmupIncomplete
     case warmupFailed(String)
     case warmupHTTP(Int, String)
+    case warmupNoQuota
     case modelCatalogHTTP(Int)
     case modelCatalogEmpty
     case modelUnavailable
@@ -24,6 +25,7 @@ enum AccountServiceError: LocalizedError {
         case .warmupIncomplete: return "预热流在完成事件前结束。"
         case .warmupFailed(let message): return "预热流失败：\(message)"
         case .warmupHTTP(let status, let message): return "预热请求失败（HTTP \(status)）：\(message)"
+        case .warmupNoQuota: return "当前账号没有可用额度，无法预热。请等待额度窗口刷新后再试。"
         case .modelCatalogHTTP(let status): return "模型目录请求失败（HTTP \(status)）。"
         case .modelCatalogEmpty: return "模型目录没有返回可用模型。"
         case .modelUnavailable: return "无法确定可用模型：模型目录不可用，且 ~/.codex/config.toml 未配置 model。"

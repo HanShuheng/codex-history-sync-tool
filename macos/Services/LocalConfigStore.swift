@@ -19,6 +19,10 @@ struct LocalConfigStore: Sendable {
         try update { $0.selectedThreadIDs = ids }
     }
 
+    func saveAutoSyncAfterAccountSwitch(_ enabled: Bool) throws {
+        try update { $0.autoSyncAfterAccountSwitch = enabled }
+    }
+
     private func update(_ change: (inout LocalConfig) -> Void) throws {
         Self.lock.lock()
         defer { Self.lock.unlock() }

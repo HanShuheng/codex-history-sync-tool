@@ -51,12 +51,17 @@ struct AccountPoolCheck {
         let localConfig = LocalConfigStore(paths: paths)
         try localConfig.saveAccounts([account])
         try localConfig.saveSelectedThreadIDs(["thread"])
+        try localConfig.saveAutoSyncAfterAccountSwitch(true)
         let saved = try localConfig.load()
         precondition(saved.accounts.first?.credentials?.accessToken == "access")
         precondition(saved.selectedThreadIDs == ["thread"])
+        precondition(saved.autoSyncAfterAccountSwitch)
         let permissions = try FileManager.default.attributesOfItem(atPath: paths.appConfig.path)[.posixPermissions] as? NSNumber
         precondition(permissions?.intValue == 0o600)
         try? FileManager.default.removeItem(at: home)
+
+        let exhausted = AccountUsageSnapshot(primaryRemainPercent: 0, primaryResetsAt: Date().addingTimeInterval(3600), secondaryRemainPercent: 84, secondaryResetsAt: Date().addingTimeInterval(7 * 24 * 3600), capturedAt: Date())
+        precondition(exhausted.hasNoAvailableQuota)
 
         let directConfig = CodexAuthFile.directConfig(from: "model_provider = \"cm\"\nmodel = \"gpt-5\"\n\n[model_providers.cm]\nbase_url = \"http://localhost\"\n\n[model_providers.other]\nname = \"Other\"\n")
         precondition(!directConfig.contains("model_provider = \"cm\""))

@@ -25,6 +25,20 @@ struct AccountService: Sendable {
         try localConfig.saveAccounts(accounts)
     }
 
+    func loadAutoSyncAfterAccountSwitch() throws -> Bool {
+        try localConfig.load().autoSyncAfterAccountSwitch
+    }
+
+    func saveAutoSyncAfterAccountSwitch(_ enabled: Bool) throws {
+        try localConfig.saveAutoSyncAfterAccountSwitch(enabled)
+    }
+
+    func syncSelectedHistory() throws -> OperationResult? {
+        let ids = try localConfig.load().selectedThreadIDs
+        guard !ids.isEmpty else { return nil }
+        return try HistoryService(paths: paths).sync(ids)
+    }
+
     func importCurrent() throws -> (AccountRecord, AccountCredentials) {
         let object = try jsonObject(at: paths.auth)
         guard let tokens = object["tokens"] as? [String: Any],
@@ -68,6 +82,9 @@ struct AccountService: Sendable {
 
     func warmup(_ account: AccountRecord) async throws -> AccountRecord {
         guard var credentials = account.credentials else { throw AccountServiceError.credentialFile("账号凭据缺失，请重新登录。") }
+        if account.usage?.hasNoAvailableQuota == true {
+            throw AccountServiceError.warmupNoQuota
+        }
         guard var model = await warmupModel(for: account, credentials: credentials) else {
             throw AccountServiceError.modelUnavailable
         }
@@ -80,7 +97,11 @@ struct AccountService: Sendable {
             }
             try await sendWarmupWithFallback(credentials, model: model)
         }
-        return try await withUsage(account, credentials: credentials)
+        let updated = try await withUsage(account, credentials: credentials)
+        if updated.usage?.hasNoAvailableQuota == true {
+            throw AccountServiceError.warmupNoQuota
+        }
+        return updated
     }
 
     func switchTo(_ account: AccountRecord) async throws -> AccountRecord {

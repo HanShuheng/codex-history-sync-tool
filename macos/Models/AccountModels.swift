@@ -6,6 +6,13 @@ struct AccountUsageSnapshot: Codable, Hashable, Sendable {
     var secondaryRemainPercent: Double?
     var secondaryResetsAt: Date?
     var capturedAt: Date
+
+    var hasNoAvailableQuota: Bool {
+        [(primaryRemainPercent, primaryResetsAt), (secondaryRemainPercent, secondaryResetsAt)].contains { remain, reset in
+            guard let remain, remain <= 0 else { return false }
+            return reset.map { $0 > Date() } ?? true
+        }
+    }
 }
 
 struct AccountRecord: Codable, Identifiable, Hashable, Sendable {

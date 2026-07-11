@@ -7,11 +7,16 @@ final class AccountStore: ObservableObject {
     @Published var busy = false
     @Published var message: String?
     @Published var error: String?
+    @Published var autoSyncAfterAccountSwitch = false
 
     let service = AccountService()
 
     func load() {
-        do { accounts = try service.load(); markCurrent() }
+        do {
+            accounts = try service.load()
+            autoSyncAfterAccountSwitch = try service.loadAutoSyncAfterAccountSwitch()
+            markCurrent()
+        }
         catch let caught { error = caught.localizedDescription }
     }
 
@@ -37,6 +42,12 @@ final class AccountStore: ObservableObject {
         execute { for id in ids { await self.refresh(id) } }
     }
 
+    func setAutoSyncAfterAccountSwitch(_ enabled: Bool) {
+        autoSyncAfterAccountSwitch = enabled
+        do { try service.saveAutoSyncAfterAccountSwitch(enabled) }
+        catch let caught { error = caught.localizedDescription }
+    }
+
     func warmupSelectedOrAll() {
         let ids = selectedIDs.isEmpty ? accounts.map(\.id) : Array(selectedIDs)
         execute {
@@ -50,12 +61,23 @@ final class AccountStore: ObservableObject {
         }
     }
 
-    func switchTo(_ account: AccountRecord) {
+    func switchTo(_ account: AccountRecord, autoSync: Bool) {
         execute {
             let switched = try await self.service.switchTo(account)
             self.accounts = self.accounts.map { var item = $0; item = item.id == account.id ? switched : item; item.isCurrent = item.id == account.id; return item }
             try self.service.save(self.accounts)
-            self.message = "已切换到 \(account.displayName)，请重启 Codex 使新登录态生效。"
+            try self.service.saveAutoSyncAfterAccountSwitch(autoSync)
+            self.autoSyncAfterAccountSwitch = autoSync
+            var syncMessage = ""
+            if autoSync {
+                do {
+                    let result = try self.service.syncSelectedHistory()
+                    syncMessage = result.map { "已自动同步 \($0.updatedRows ?? 0) 条历史记录。" } ?? "没有选中的历史记录，未执行同步。"
+                } catch {
+                    syncMessage = "自动同步失败，请到历史记录页面手动同步。"
+                }
+            }
+            self.message = "已切换到 \(account.displayName)。\(syncMessage)请重启 Codex 使新登录态生效。"
         }
     }
 
