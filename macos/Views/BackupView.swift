@@ -6,27 +6,41 @@ struct BackupView: View {
     @State private var confirmDelete = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            header
-            backupTable
-        }.padding(20)
+        VStack(alignment: .leading, spacing: 0) {
+            if store.backups == nil {
+                ProgressView()
+                    .controlSize(.large)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if store.backups?.backups.isEmpty == true {
+                EmptyStateView(
+                    title: localization.text("backup.emptyTitle"),
+                    message: localization.text("backup.emptyMessage"),
+                    systemImage: "externaldrive"
+                )
+            } else {
+                backupTable
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            Text(summary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.regularMaterial)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button(localization.text("backup.openFolder")) { store.client.openBackups() }
+                Button(String(format: localization.text("backup.deleteSelected"), store.selectedBackups.count), role: .destructive) {
+                    confirmDelete = true
+                }
+                .disabled(store.selectedBackups.isEmpty || store.busy)
+            }
+        }
         .alert(localization.text("backup.deleteTitle"), isPresented: $confirmDelete) {
             Button(localization.text("common.cancel"), role: .cancel) {}
             Button(localization.text("common.delete"), role: .destructive) { store.deleteSelectedBackups() }
         } message: { Text(localization.text("backup.deleteMessage")) }
-    }
-
-    private var header: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text(localization.text("backup.title")).font(.title.bold())
-                Text(summary).foregroundStyle(.secondary)
-            }
-            Spacer()
-            Button(localization.text("backup.openFolder")) { store.client.openBackups() }
-            Button(String(format: localization.text("backup.deleteSelected"), store.selectedBackups.count), role: .destructive) { confirmDelete = true }
-                .disabled(store.selectedBackups.isEmpty)
-        }
     }
 
     private var summary: String {

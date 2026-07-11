@@ -7,21 +7,73 @@ struct AccountsView: View {
     @State private var pendingSwitch: AccountRecord?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(localization.text("accounts.title")).font(.title2.bold())
-                    Text(String(format: localization.text("accounts.count"), store.accounts.count)).font(.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 0) {
+            if store.accounts.isEmpty {
+                EmptyStateView(
+                    title: localization.text("accounts.emptyTitle"),
+                    message: localization.text("accounts.emptyMessage"),
+                    systemImage: "person.3"
+                )
+            } else {
+                Table(store.accounts, selection: $store.selectedIDs) {
+                    TableColumn(localization.text("accounts.column.name")) { account in
+                        VStack(alignment: .leading) {
+                            HStack {
+                                Text(account.displayName)
+                                if account.isCurrent {
+                                    Text(localization.text("accounts.current"))
+                                        .font(.caption2)
+                                        .foregroundStyle(.green)
+                                }
+                            }
+                            Text(account.email ?? account.id)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }.width(min: 220, ideal: 280)
+                    TableColumn(localization.text("accounts.column.plan")) { account in
+                        Text(account.plan ?? localization.text("value.unknown"))
+                    }
+                    TableColumn(localization.text("accounts.column.fiveHour")) { account in
+                        usageText(account.usage?.primaryRemainPercent, reset: account.usage?.primaryResetsAt, tint: .green)
+                    }
+                    TableColumn(localization.text("accounts.column.sevenDay")) { account in
+                        usageText(account.usage?.secondaryRemainPercent, reset: account.usage?.secondaryResetsAt, tint: .blue)
+                    }
+                    TableColumn(localization.text("accounts.column.status")) { account in
+                        Text(account.status == "active" ? localization.text("accounts.active") : account.status)
+                            .foregroundStyle(account.status == "active" ? .green : .orange)
+                            .help(account.lastError ?? "")
+                    }
+                    TableColumn(localization.text("accounts.column.action")) { account in
+                        Button {
+                            pendingSwitch = account
+                        } label: {
+                            Label(localization.text("accounts.switch"), systemImage: "arrow.triangle.2.circlepath")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(account.isCurrent)
+                    }
                 }
-                Spacer()
-                Button(localization.text("accounts.import")) { showImport = true }
-                Button(localization.text("accounts.login")) { store.login() }.buttonStyle(.borderedProminent)
             }
-            HStack {
-                Button(localization.text("accounts.refresh")) { store.refreshSelectedOrAll() }.disabled(store.accounts.isEmpty || store.busy)
-                Button(localization.text("accounts.warmup")) { store.warmupSelectedOrAll() }.disabled(store.accounts.isEmpty || store.busy)
-                Text(localization.text("accounts.hint")).font(.caption).foregroundStyle(.secondary)
-                Spacer()
+        }
+        .safeAreaInset(edge: .bottom) {
+            Text(String(format: localization.text("accounts.count"), store.accounts.count))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.regularMaterial)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button(localization.text("accounts.import")) { showImport = true }
+                Button(localization.text("accounts.login")) { store.login() }
+                    .buttonStyle(.borderedProminent)
+                Divider()
+                Button(localization.text("accounts.refresh")) { store.refreshSelectedOrAll() }
+                    .disabled(store.accounts.isEmpty || store.busy)
+                Button(localization.text("accounts.warmup")) { store.warmupSelectedOrAll() }
+                    .disabled(store.accounts.isEmpty || store.busy)
                 Toggle(localization.text("accounts.autoSyncAfterSwitch"), isOn: Binding(
                     get: { store.autoSyncAfterAccountSwitch },
                     set: { store.setAutoSyncAfterAccountSwitch($0) }
@@ -29,34 +81,7 @@ struct AccountsView: View {
                 .toggleStyle(.switch)
                 .help(localization.text("accounts.autoSyncHelp"))
             }
-            Table(store.accounts, selection: $store.selectedIDs) {
-                TableColumn(localization.text("accounts.column.name")) { account in
-                    VStack(alignment: .leading) {
-                        HStack { Text(account.displayName); if account.isCurrent { Text(localization.text("accounts.current")).font(.caption2).foregroundStyle(.green) } }
-                        Text(account.email ?? account.id).font(.caption).foregroundStyle(.secondary)
-                    }
-                }.width(min: 220, ideal: 280)
-                TableColumn(localization.text("accounts.column.plan")) { account in Text(account.plan ?? localization.text("value.unknown")) }
-                TableColumn(localization.text("accounts.column.fiveHour")) { account in usageText(account.usage?.primaryRemainPercent, reset: account.usage?.primaryResetsAt, tint: .green) }
-                TableColumn(localization.text("accounts.column.sevenDay")) { account in usageText(account.usage?.secondaryRemainPercent, reset: account.usage?.secondaryResetsAt, tint: .blue) }
-                TableColumn(localization.text("accounts.column.status")) { account in
-                    Text(account.status == "active" ? localization.text("accounts.active") : account.status)
-                        .foregroundStyle(account.status == "active" ? .green : .orange)
-                        .help(account.lastError ?? "")
-                }
-                TableColumn(localization.text("accounts.column.action")) { account in
-                    Button {
-                        pendingSwitch = account
-                    } label: {
-                        Label(localization.text("accounts.switch"), systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(account.isCurrent)
-                }
-            }
         }
-        .padding(20)
-        .overlay { if store.busy { ProgressView().controlSize(.large) } }
         .alert(localization.text("accounts.importTitle"), isPresented: $showImport) {
             Button(localization.text("common.cancel"), role: .cancel) {}
             Button(localization.text("accounts.import")) { store.importCurrent() }

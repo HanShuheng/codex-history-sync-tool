@@ -13,12 +13,15 @@
 ## 功能
 
 - 原生 macOS SwiftUI 应用，可按项目浏览并选择性同步历史
+- 符合 macOS 使用习惯的侧边栏-详情布局、工具栏操作、原生搜索、键盘可操作选择和空状态提示
 - Foundation 与系统 SQLite 驱动的全原生本地服务
 - 同步数据库、会话元数据和侧边栏索引中的 Provider/模型归属
 - 归档对话不展示、不参与同步
 - 支持在应用内切换简体中文与英文，并预留其他语言扩展入口
+- 所有面向用户的时间统一显示为 `yyyy-MM-dd HH:mm:ss`
 - 每次同步前自动创建完整备份
 - 可管理成组备份，无第三方依赖
+- 可选的本地 Codex 账号池，支持登录、刷新额度、预热和直连切换账号
 
 ## 应用截图
 
@@ -32,7 +35,7 @@
 
 ## 下载并使用
 
-1. 从 [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases) 下载 `v0.0.1` 的 `CodexHistorySync.dmg`。
+1. 从 [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases) 下载 `v0.1.0` 的 `CodexHistorySync.dmg`。
 2. 打开磁盘映像，将 `CodexHistorySync.app` 拖入“应用程序”目录。
 3. 修改历史元数据前，先暂停或结束正在运行的 Codex 任务。
 4. 打开应用，勾选需要恢复显示的对话，然后点击“同步所选”。
@@ -77,7 +80,7 @@ Codex Desktop 把本地线程元数据保存在 `~/.codex`。切换账号或 Pro
 3. 使用 SQLite Backup API 备份数据库，并保存侧边栏索引与会话首行元数据。
 4. 只修改选定范围，然后重建可见侧边栏索引。
 
-备份默认保存在 `~/.codex/history_sync_backups`。
+备份默认保存在 `~/.codexhistorysync/history_sync_backups`。
 
 ## 数据安全
 
@@ -99,11 +102,14 @@ Codex Desktop 把本地线程元数据保存在 `~/.codex`。切换账号或 Pro
 
 ```bash
 ./script/test_native_backend.sh
+./script/test_account_pool.sh
 swift build
 ./script/build_and_run.sh --verify
 ```
 
-项目只使用 Swift 标准库、Foundation、SwiftUI 与系统 SQLite。贡献与安全报告方式见 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [SECURITY.md](SECURITY.md)。
+运行脚本还支持 `--debug`、`--logs` 和 `--telemetry`。SwiftPM 会先把应用组装为真正的 `.app`，再通过 macOS `open` 启动；`--verify` 会检查应用进程是否存在。
+
+项目只使用 Swift 标准库、Foundation、SwiftUI 与系统 SQLite。应用入口、视图、模型、状态、服务、支持代码和资源按目录分层。贡献与安全报告方式见 [CONTRIBUTING.md](CONTRIBUTING.md)、[SECURITY.md](SECURITY.md) 和 [Codex-Manager 分析](docs/codexmanager分析/02-Codex-Manager功能分析.md)。
 
 Swift 源码按 `App`、`Views`、`Models`、`Stores`、`Services`、`Support` 和 `Resources` 分层。新增语言时，只需添加 `Resources/<语言>.lproj/Localizable.strings` 并在 `AppLanguage` 中注册。
 

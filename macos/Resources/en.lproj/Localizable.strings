@@ -41,6 +41,8 @@
 "history.selectAll" = "Select All";
 "history.deselectAll" = "Deselect All";
 "history.syncSelected" = "Sync Selected (%d)";
+"history.emptyTitle" = "No conversations found";
+"history.emptyMessage" = "Try another project, clear the search, or wait for Codex history to finish loading.";
 "table.task" = "Conversation";
 "table.assignment" = "Provider";
 "table.status" = "Status";
@@ -58,6 +60,8 @@
 "backup.column.name" = "Backup";
 "backup.column.time" = "Time";
 "backup.column.size" = "Size";
+"backup.emptyTitle" = "No backups yet";
+"backup.emptyMessage" = "A complete backup is created before each sync and appears here when available.";
 "common.ok" = "OK";
 "common.cancel" = "Cancel";
 "common.sync" = "Sync";
@@ -70,3 +74,5 @@
 "error.backup.invalidName" = "An invalid backup name was found. Nothing was deleted.";
 "error.selection.required" = "Select at least one conversation.";
 "error.config.providerMissing" = "model_provider is missing from config.toml.";
+"accounts.emptyTitle" = "No accounts yet";
+"accounts.emptyMessage" = "Import the current Codex login or use the toolbar to sign in to a new account.";

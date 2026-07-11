@@ -2,7 +2,8 @@ import Foundation
 
 enum AccountUsageParser {
     static func snapshot(from data: Data, capturedAt: Date = Date()) throws -> AccountUsageSnapshot {
-        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw AccountServiceError.invalidUsageResponse }
+        guard let object = try? JSONSerialization.jsonObject(with: data),
+              let root = object as? [String: Any] else { throw AccountServiceError.invalidUsageResponse }
         let rate = root["rate_limit"] as? [String: Any]
         let primary = window(rate?["primary_window"] as? [String: Any])
         let secondary = window(rate?["secondary_window"] as? [String: Any])

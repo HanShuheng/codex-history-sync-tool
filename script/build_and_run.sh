@@ -4,7 +4,7 @@ set -euo pipefail
 MODE="${1:-run}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="CodexHistorySync"
-APP_VERSION="0.0.1"
+APP_VERSION="0.1.0"
 APP="$ROOT/dist/$APP_NAME.app"
 BIN="$APP/Contents/MacOS/$APP_NAME"
 
@@ -60,6 +60,7 @@ case "$MODE" in
   run) open -n "$APP" ;;
   --debug|debug) lldb -- "$BIN" ;;
   --logs|logs) open -n "$APP"; /usr/bin/log stream --info --style compact --predicate "process == '$APP_NAME'" ;;
+  --telemetry|telemetry) open -n "$APP"; /usr/bin/log stream --info --style compact --predicate "subsystem == 'com.hanshuheng.CodexHistorySync'" ;;
   --verify|verify) open -n "$APP"; sleep 2; pgrep -x "$APP_NAME" >/dev/null ;;
-  *) echo "用法: $0 [run|--debug|--logs|--verify]" >&2; exit 2 ;;
+  *) echo "用法: $0 [run|--debug|--logs|--telemetry|--verify]" >&2; exit 2 ;;
 esac

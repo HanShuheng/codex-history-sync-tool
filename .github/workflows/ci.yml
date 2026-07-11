@@ -10,4 +10,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: ./script/test_native_backend.sh
+      - run: ./script/test_account_pool.sh
       - run: swift build
