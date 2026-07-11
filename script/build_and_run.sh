@@ -4,6 +4,7 @@ set -euo pipefail
 MODE="${1:-run}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="CodexHistorySync"
+APP_VERSION="0.0.1"
 APP="$ROOT/dist/$APP_NAME.app"
 BIN="$APP/Contents/MacOS/$APP_NAME"
 
@@ -20,9 +21,23 @@ if [[ -d "$RESOURCE_BUNDLE" ]]; then
   cp -R "$RESOURCE_BUNDLE" "$APP/Contents/Resources/"
 fi
 chmod +x "$BIN"
-/usr/libexec/PlistBuddy -c "Clear dict" "$APP/Contents/Info.plist" 2>/dev/null || true
-/usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string $APP_NAME" -c "Add :CFBundleIdentifier string com.hanshuheng.CodexHistorySync" -c "Add :CFBundleName string Codex History Sync" -c "Add :CFBundleDisplayName string Codex History Sync" -c "Add :CFBundleDevelopmentRegion string en" -c "Add :CFBundleLocalizations array" -c "Add :CFBundleLocalizations:0 string en" -c "Add :CFBundleLocalizations:1 string zh-Hans" -c "Add :CFBundlePackageType string APPL" -c "Add :LSHasLocalizedDisplayName bool true" -c "Add :LSMinimumSystemVersion string 13.0" -c "Add :NSPrincipalClass string NSApplication" "$APP/Contents/Info.plist"
-/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "$APP/Contents/Info.plist"
+plutil -create xml1 "$APP/Contents/Info.plist"
+add_plist() { /usr/libexec/PlistBuddy -c "$1" "$APP/Contents/Info.plist"; }
+add_plist "Add :CFBundleExecutable string $APP_NAME"
+add_plist "Add :CFBundleIdentifier string com.hanshuheng.CodexHistorySync"
+add_plist "Add :CFBundleName string Codex History Sync"
+add_plist "Add :CFBundleDisplayName string Codex History Sync"
+add_plist "Add :CFBundleShortVersionString string $APP_VERSION"
+add_plist "Add :CFBundleVersion string $APP_VERSION"
+add_plist "Add :CFBundleDevelopmentRegion string en"
+add_plist "Add :CFBundleLocalizations array"
+add_plist "Add :CFBundleLocalizations:0 string en"
+add_plist "Add :CFBundleLocalizations:1 string zh-Hans"
+add_plist "Add :CFBundlePackageType string APPL"
+add_plist "Add :LSHasLocalizedDisplayName bool true"
+add_plist "Add :LSMinimumSystemVersion string 13.0"
+add_plist "Add :NSPrincipalClass string NSApplication"
+add_plist "Add :CFBundleIconFile string AppIcon"
 mkdir -p "$APP/Contents/Resources"
 for strings in "$ROOT"/macos/Resources/*.lproj/InfoPlist.strings; do
   language="$(basename "$(dirname "$strings")")"

@@ -32,8 +32,8 @@ A native macOS, backup-first utility for making Codex Desktop conversations visi
 
 ## Download and Use
 
-1. Download `CodexHistorySync.zip` from the project release page.
-2. Unzip it and move `CodexHistorySync.app` to `Applications`.
+1. Download `CodexHistorySync.dmg` from [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases), version `v0.0.1`.
+2. Open the disk image and move `CodexHistorySync.app` to `Applications`.
 3. Quit or pause active Codex tasks before changing history metadata.
 4. Open the app, select the conversations you want, and click **Sync Selected**.
 5. Restart Codex Desktop if its sidebar does not refresh immediately.
@@ -60,7 +60,7 @@ The app is built locally at `dist/CodexHistorySync.app`. Archived conversations 
 ./script/package_release.sh
 ```
 
-This creates universal Apple Silicon and Intel artifacts at `dist/CodexHistorySync.app` and `dist/CodexHistorySync.zip`. Public distribution requires Apple Developer ID signing and notarization:
+This creates a universal Apple Silicon and Intel app at `dist/CodexHistorySync.app` and packages it as `dist/CodexHistorySync.dmg`. Upload the DMG as a GitHub Release asset. Public distribution requires Apple Developer ID signing and notarization:
 
 ```bash
 SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" \

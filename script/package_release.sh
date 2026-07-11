@@ -3,10 +3,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="CodexHistorySync"
+APP_VERSION="0.0.1"
 BUNDLE_ID="com.hanshuheng.CodexHistorySync"
 MINIMUM_MACOS="13.0"
 APP="$ROOT/dist/$APP_NAME.app"
-ARCHIVE="$ROOT/dist/$APP_NAME.zip"
+ARCHIVE="$ROOT/dist/$APP_NAME.dmg"
 ARM_BUILD="$ROOT/.build/release-arm64"
 INTEL_BUILD="$ROOT/.build/release-x86_64"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
@@ -25,22 +26,23 @@ lipo -create \
 RESOURCE_BUNDLE="$ARM_BUILD/arm64-apple-macosx/release/${APP_NAME}_${APP_NAME}.bundle"
 cp -R "$RESOURCE_BUNDLE" "$APP/Contents/Resources/"
 
-/usr/libexec/PlistBuddy -c "Clear dict" "$APP/Contents/Info.plist" 2>/dev/null || true
-/usr/libexec/PlistBuddy \
-  -c "Add :CFBundleExecutable string $APP_NAME" \
-  -c "Add :CFBundleIdentifier string $BUNDLE_ID" \
-  -c "Add :CFBundleName string Codex History Sync" \
-  -c "Add :CFBundleDisplayName string Codex History Sync" \
-  -c "Add :CFBundleDevelopmentRegion string en" \
-  -c "Add :CFBundleLocalizations array" \
-  -c "Add :CFBundleLocalizations:0 string en" \
-  -c "Add :CFBundleLocalizations:1 string zh-Hans" \
-  -c "Add :CFBundlePackageType string APPL" \
-  -c "Add :LSHasLocalizedDisplayName bool true" \
-  -c "Add :LSMinimumSystemVersion string $MINIMUM_MACOS" \
-  -c "Add :NSPrincipalClass string NSApplication" \
-  -c "Add :CFBundleIconFile string AppIcon" \
-  "$APP/Contents/Info.plist"
+plutil -create xml1 "$APP/Contents/Info.plist"
+add_plist() { /usr/libexec/PlistBuddy -c "$1" "$APP/Contents/Info.plist"; }
+add_plist "Add :CFBundleExecutable string $APP_NAME"
+add_plist "Add :CFBundleIdentifier string $BUNDLE_ID"
+add_plist "Add :CFBundleName string Codex History Sync"
+add_plist "Add :CFBundleDisplayName string Codex History Sync"
+add_plist "Add :CFBundleShortVersionString string $APP_VERSION"
+add_plist "Add :CFBundleVersion string $APP_VERSION"
+add_plist "Add :CFBundleDevelopmentRegion string en"
+add_plist "Add :CFBundleLocalizations array"
+add_plist "Add :CFBundleLocalizations:0 string en"
+add_plist "Add :CFBundleLocalizations:1 string zh-Hans"
+add_plist "Add :CFBundlePackageType string APPL"
+add_plist "Add :LSHasLocalizedDisplayName bool true"
+add_plist "Add :LSMinimumSystemVersion string $MINIMUM_MACOS"
+add_plist "Add :NSPrincipalClass string NSApplication"
+add_plist "Add :CFBundleIconFile string AppIcon"
 
 for strings in "$ROOT"/macos/Resources/*.lproj/InfoPlist.strings; do
   language="$(basename "$(dirname "$strings")")"
@@ -65,15 +67,14 @@ else
   codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP"
-ditto -c -k --keepParent "$APP" "$ARCHIVE"
+hdiutil create -volname "$APP_NAME $APP_VERSION" -srcfolder "$APP" -ov -format UDZO "$ARCHIVE"
 
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then
   [[ "$SIGNING_IDENTITY" != "-" ]] || { echo "公证需要 SIGNING_IDENTITY。" >&2; exit 2; }
   xcrun notarytool submit "$ARCHIVE" --keychain-profile "$NOTARY_PROFILE" --wait
-  xcrun stapler staple "$APP"
-  ditto -c -k --keepParent "$APP" "$ARCHIVE"
-  spctl --assess --type execute --verbose=4 "$APP"
+  xcrun stapler staple "$ARCHIVE"
+  spctl --assess --type open --verbose=4 "$ARCHIVE"
 fi
 
 echo "发布包：$APP"
-echo "压缩包：$ARCHIVE"
+echo "磁盘映像：$ARCHIVE"

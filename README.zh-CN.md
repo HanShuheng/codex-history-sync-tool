@@ -32,8 +32,8 @@
 
 ## 下载并使用
 
-1. 从项目发布页面下载 `CodexHistorySync.zip`。
-2. 解压后将 `CodexHistorySync.app` 移入“应用程序”目录。
+1. 从 [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases) 下载 `v0.0.1` 的 `CodexHistorySync.dmg`。
+2. 打开磁盘映像，将 `CodexHistorySync.app` 拖入“应用程序”目录。
 3. 修改历史元数据前，先暂停或结束正在运行的 Codex 任务。
 4. 打开应用，勾选需要恢复显示的对话，然后点击“同步所选”。
 5. 如果侧边栏没有立即刷新，请重启 Codex Desktop。
@@ -60,7 +60,7 @@ cd codex-history-sync-tool
 ./script/package_release.sh
 ```
 
-脚本会生成同时支持 Apple Silicon 和 Intel Mac 的 `dist/CodexHistorySync.app` 与 `dist/CodexHistorySync.zip`。公开分发时需要 Apple Developer ID 签名和公证：
+脚本会生成同时支持 Apple Silicon 和 Intel Mac 的 `dist/CodexHistorySync.app`，并打包为 `dist/CodexHistorySync.dmg`；发布时应将 DMG 作为 GitHub Release 附件上传。公开分发时需要 Apple Developer ID 签名和公证：
 
 ```bash
 SIGNING_IDENTITY="Developer ID Application: 你的名称 (TEAMID)" \
