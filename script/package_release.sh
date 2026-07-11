@@ -13,6 +13,8 @@ INTEL_BUILD="$ROOT/.build/release-x86_64"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
 
 cd "$ROOT"
+export SWIFT_MODULECACHE_PATH="$ROOT/.build/swift-module-cache"
+export CLANG_MODULE_CACHE_PATH="$ROOT/.build/clang-module-cache"
 swift build -c release --triple arm64-apple-macosx13.0 --scratch-path "$ARM_BUILD"
 swift build -c release --triple x86_64-apple-macosx13.0 --scratch-path "$INTEL_BUILD"
 
