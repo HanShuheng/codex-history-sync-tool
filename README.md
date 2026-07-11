@@ -109,7 +109,7 @@ swift build
 
 The run script also supports `--debug`, `--logs`, and `--telemetry`. SwiftPM first stages a real `.app` bundle and launches it through macOS `open`; `--verify` checks that the app process is running.
 
-The project uses only the Swift standard library, Foundation, SwiftUI, and system SQLite. The app entrypoint, views, models, stores, services, support code, and resources are kept in separate directories. See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the [Codex-Manager analysis](docs/codexmanager分析/02-Codex-Manager功能分析.md).
+The project uses only the Swift standard library, Foundation, SwiftUI, and system SQLite. The app entrypoint, views, models, stores, services, support code, and resources are kept in separate directories. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 Swift sources follow `App`, `Views`, `Models`, `Stores`, `Services`, `Support`, and `Resources` boundaries. To add a language, add `Resources/<language>.lproj/Localizable.strings` and register it in `AppLanguage`.
 

@@ -16,7 +16,7 @@ __pycache__/
 .codex/
 
 # Private Codex data: never commit conversations, configuration, or backups
-docs/codexmanager分析/
+docs/*分析/
 .env
 .env.*
 !.env.example
