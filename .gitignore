@@ -1,5 +1,6 @@
 # Build and editor artifacts
 .build/
+build/
 dist/
 tmp/
 DerivedData/

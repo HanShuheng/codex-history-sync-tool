@@ -35,7 +35,7 @@
 
 ## 下载并使用
 
-1. 从 [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases) 下载 `v0.1.0` 的 `CodexHistorySync.dmg`。
+1. 从 [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases) 下载 `v0.1.1` 的 `CodexHistorySync.dmg`。
 2. 打开磁盘映像，将 `CodexHistorySync.app` 拖入“应用程序”目录。
 3. 修改历史元数据前，先暂停或结束正在运行的 Codex 任务。
 4. 打开应用，勾选需要恢复显示的对话，然后点击“同步所选”。

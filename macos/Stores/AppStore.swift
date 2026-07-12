@@ -5,7 +5,9 @@ final class AppStore: ObservableObject {
     @Published var response: ThreadResponse?
     @Published var backups: BackupResponse?
     @Published var selectedIDs = Set<String>()
-    @Published var selectedBackups = Set<String>()
+    @Published var selectedBackups = UIStateStore.shared.backupSelectedNames {
+        didSet { UIStateStore.shared.backupSelectedNames = selectedBackups }
+    }
     @Published var busy = false
     @Published var errorKey: String?
     let client = BackendClient()

@@ -1,19 +1,11 @@
 import SwiftUI
 
-private struct SelectionColumnCenterKey: PreferenceKey {
-    static var defaultValue: CGFloat? = nil
-
-    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
-        if value == nil { value = nextValue() }
-    }
-}
-
 struct HistoryView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @ObservedObject var store: AppStore
     let project: String
-    @State private var search = ""
-    @State private var currentOnly = false
+    @State private var search = UIStateStore.shared.historySearch
+    @State private var currentOnly = UIStateStore.shared.historyCurrentOnly
     @State private var showSyncConfirmation = false
 
     private var threads: [ThreadItem] {
@@ -43,6 +35,9 @@ struct HistoryView: View {
                 table
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onChange(of: search) { value in UIStateStore.shared.historySearch = value }
+        .onChange(of: currentOnly) { value in UIStateStore.shared.historyCurrentOnly = value }
         .safeAreaInset(edge: .bottom) {
             HStack {
                 Text(projectTitle).font(.headline)
@@ -99,63 +94,20 @@ struct HistoryView: View {
     }
 
     private var table: some View {
-        Table(threads) {
-            TableColumn("") { item in
-                Toggle("", isOn: selectionBinding(for: item)).labelsHidden()
-                    .background {
-                        GeometryReader { proxy in
-                            Color.clear.preference(
-                                key: SelectionColumnCenterKey.self,
-                                value: proxy.frame(in: .global).midX
-                            )
-                        }
-                    }
-            }
-            TableColumn(localization.text("table.task")) { item in
-                HStack {
-                    if item.pinned { Image(systemName: "pin.fill").foregroundStyle(.orange) }
-                    Text(item.title)
-                }
-            }
-            TableColumn(localization.text("table.assignment")) { item in
-                VStack(alignment: .leading) {
-                    Text(item.provider.isEmpty ? localization.text("value.empty") : item.provider)
-                    Text(item.model.isEmpty ? localization.text("value.empty") : item.model)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            TableColumn(localization.text("table.status")) { item in
-                Text(localization.text(item.isCurrent ? "status.current" : "status.pending"))
-                    .foregroundStyle(item.isCurrent ? .green : .orange)
-            }
-            TableColumn(localization.text("table.updated")) { item in
-                Text(localization.date(item.updatedAt))
-            }
-        }
-        .overlayPreferenceValue(SelectionColumnCenterKey.self) { center in
-            GeometryReader { proxy in
-                if let center {
-                    Button(action: toggleAll) {
-                        Image(systemName: selectionIcon)
-                    }
-                    .buttonStyle(.borderless)
-                    .frame(width: 30, height: 24)
-                    .position(
-                        x: center - proxy.frame(in: .global).minX,
-                        y: 12
-                    )
-                    .contentShape(Rectangle())
-                    .disabled(threads.isEmpty)
-                    .help(selectionActionTitle)
-                    .accessibilityLabel(selectionActionTitle)
-                }
-            }
-        }
-    }
-
-    private var allVisibleSelected: Bool {
-        !threads.isEmpty && threads.allSatisfy { store.selectedIDs.contains($0.id) }
+        HistoryTableView(
+            items: threads,
+            selectedIDs: $store.selectedIDs,
+            taskTitle: localization.text("table.task"),
+            assignmentTitle: localization.text("table.assignment"),
+            statusTitle: localization.text("table.status"),
+            updatedTitle: localization.text("table.updated"),
+            emptyValue: localization.text("value.empty"),
+            currentValue: localization.text("status.current"),
+            pendingValue: localization.text("status.pending"),
+            date: localization.date,
+            persistSelections: { store.persistSelections() }
+        )
+        .frame(minWidth: 900, maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var projectTitle: String {
@@ -164,30 +116,4 @@ struct HistoryView: View {
         return URL(fileURLWithPath: project).lastPathComponent
     }
 
-    private var selectionActionTitle: String {
-        localization.text(allVisibleSelected ? "history.deselectVisible" : "history.selectVisible")
-    }
-
-    private var selectionIcon: String {
-        allVisibleSelected ? "checkmark.square.fill" :
-            threads.contains { store.selectedIDs.contains($0.id) } ? "minus.square" : "square"
-    }
-
-    private func toggleAll() {
-        let ids = Set(threads.map(\.id))
-        if allVisibleSelected { store.selectedIDs.subtract(ids) }
-        else { store.selectedIDs.formUnion(ids) }
-        store.persistSelections()
-    }
-
-    private func selectionBinding(for item: ThreadItem) -> Binding<Bool> {
-        Binding(
-            get: { store.selectedIDs.contains(item.id) },
-            set: { selected in
-                if selected { store.selectedIDs.insert(item.id) }
-                else { store.selectedIDs.remove(item.id) }
-                store.persistSelections()
-            }
-        )
-    }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AccountsView: View {
     @EnvironmentObject private var localization: LocalizationStore
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var store: AccountStore
     @State private var showImport = false
     @State private var pendingSwitch: AccountRecord?
@@ -19,6 +20,11 @@ struct AccountsView: View {
             } else {
                 accountTable
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear { store.refreshWhenAccountsPageIsShown() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active { store.refreshWhenAccountsPageIsShown() }
         }
         .safeAreaInset(edge: .bottom) {
             Text(String(format: localization.text("accounts.count"), store.accounts.count))
@@ -38,7 +44,7 @@ struct AccountsView: View {
                 pendingSwitch = nil
             } confirm: {
                 pendingSwitch = nil
-                store.switchTo(account, autoSync: store.autoSyncAfterAccountSwitch)
+                store.switchTo(account, autoSync: store.autoSyncAfterAccountSwitch, autoRestartCodex: store.autoRestartCodexAfterAccountSwitch)
             }
         }
         .alert(localization.text("error.title"), isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
@@ -103,6 +109,12 @@ struct AccountsView: View {
                 ))
                 .toggleStyle(.switch)
                 .help(localization.text("accounts.autoSyncHelp"))
+                Toggle(localization.text("accounts.autoRestartCodexAfterSwitch"), isOn: Binding(
+                    get: { store.autoRestartCodexAfterAccountSwitch },
+                    set: { store.setAutoRestartCodexAfterAccountSwitch($0) }
+                ))
+                .toggleStyle(.switch)
+                .help(localization.text("accounts.autoRestartCodexHelp"))
             }
         }
         .padding(.horizontal, 20)
@@ -126,20 +138,25 @@ struct AccountsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .width(min: 180, ideal: 240, max: 420)
             TableColumn(localization.text("accounts.column.plan")) { account in
                 Text(account.plan ?? localization.text("value.unknown"))
             }
+            .width(min: 90, ideal: 110, max: 180)
             TableColumn(localization.text("accounts.column.fiveHour")) { account in
                 usageText(account.usage?.primaryRemainPercent, reset: account.usage?.primaryResetsAt, tint: .green)
             }
+            .width(min: 150, ideal: 190, max: 260)
             TableColumn(localization.text("accounts.column.sevenDay")) { account in
                 usageText(account.usage?.secondaryRemainPercent, reset: account.usage?.secondaryResetsAt, tint: .blue)
             }
+            .width(min: 150, ideal: 190, max: 260)
             TableColumn(localization.text("accounts.column.status")) { account in
                 Text(account.status == "active" ? localization.text("accounts.active") : account.status)
                     .foregroundStyle(account.status == "active" ? .green : .orange)
                     .help(account.lastError ?? "")
             }
+            .width(min: 80, ideal: 100, max: 160)
             TableColumn(localization.text("accounts.column.action")) { account in
                 Button {
                     pendingSwitch = account
@@ -149,7 +166,9 @@ struct AccountsView: View {
                 .buttonStyle(.bordered)
                 .disabled(account.isCurrent)
             }
+            .width(min: 90, ideal: 110, max: 160)
         }
+        .frame(minWidth: 960, maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func usageText(_ percent: Double?, reset: Date?, tint: Color) -> some View {

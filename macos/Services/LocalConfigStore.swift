@@ -23,6 +23,10 @@ struct LocalConfigStore: Sendable {
         try update { $0.autoSyncAfterAccountSwitch = enabled }
     }
 
+    func saveAutoRestartCodexAfterAccountSwitch(_ enabled: Bool) throws {
+        try update { $0.autoRestartCodexAfterAccountSwitch = enabled }
+    }
+
     private func update(_ change: (inout LocalConfig) -> Void) throws {
         Self.lock.lock()
         defer { Self.lock.unlock() }

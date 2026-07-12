@@ -23,6 +23,7 @@ struct BackupView: View {
                 backupTable
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .alert(localization.text("backup.deleteTitle"), isPresented: $confirmDelete) {
             Button(localization.text("common.cancel"), role: .cancel) {}
             Button(localization.text("common.delete"), role: .destructive) { store.deleteSelectedBackups() }
@@ -75,14 +76,19 @@ struct BackupView: View {
             TableColumn("") { item in
                 Toggle("", isOn: binding(for: item)).labelsHidden()
             }
+            .width(min: 34, ideal: 40, max: 50)
             TableColumn(localization.text("backup.column.name"), value: \.name)
+                .width(min: 260, ideal: 420, max: 720)
             TableColumn(localization.text("backup.column.time")) { item in
                 Text(localization.date(item.modifiedAt))
             }
+            .width(min: 170, ideal: 210, max: 300)
             TableColumn(localization.text("backup.column.size")) { item in
                 Text(localization.bytes(Int64(item.sizeBytes)))
             }
+            .width(min: 100, ideal: 130, max: 200)
         }
+        .frame(minWidth: 800, maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func binding(for item: BackupItem) -> Binding<Bool> {

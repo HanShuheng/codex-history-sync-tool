@@ -4,9 +4,9 @@ struct MainView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store = AppStore()
-    @StateObject private var accountStore = AccountStore()
-    @State private var workspace = Workspace.history
-    @State private var project = ""
+    @ObservedObject var accountStore: AccountStore
+    @State private var workspace = Workspace(rawValue: UIStateStore.shared.workspace) ?? .history
+    @State private var project = UIStateStore.shared.project
 
     private var detailTitle: String {
         switch workspace {
@@ -25,6 +25,17 @@ struct MainView: View {
                 .navigationTitle(detailTitle)
         }
         .frame(minWidth: 960, minHeight: 620)
+        .toolbar {
+            ToolbarItem {
+                Picker(localization.text("settings.language"), selection: $localization.language) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+                .help(localization.text("settings.language"))
+            }
+        }
         .overlay(alignment: .topTrailing) {
             if store.busy || accountStore.busy {
                 ProgressView()
@@ -41,6 +52,8 @@ struct MainView: View {
         .onChange(of: scenePhase) { phase in
             if phase == .background { store.persistSelections(immediately: true) }
         }
+        .onChange(of: workspace) { value in UIStateStore.shared.workspace = value.rawValue }
+        .onChange(of: project) { value in UIStateStore.shared.project = value }
         .onDisappear { store.persistSelections(immediately: true) }
         .alert(localization.text("error.title"), isPresented: Binding(get: { store.errorKey != nil }, set: { if !$0 { store.errorKey = nil } })) {
             Button(localization.text("common.ok")) { store.errorKey = nil }

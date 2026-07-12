@@ -36,6 +36,8 @@
 "accounts.switchSheetMessage" = "将把这个账号写入 Codex 当前登录配置。";
 "accounts.autoSyncAfterSwitch" = "切换后自动同步全部历史记录";
 "accounts.autoSyncHelp" = "开启后，切换账号成功会同步全部历史记录；默认关闭。";
+"accounts.autoRestartCodexAfterSwitch" = "切换后自动重启 Codex";
+"accounts.autoRestartCodexHelp" = "开启后，账号切换成功会优雅重启正在运行的 Codex；默认关闭。";
 "accounts.done" = "账号操作完成";
 "history.all" = "全部历史";
 "history.count" = "%d 条对话";
