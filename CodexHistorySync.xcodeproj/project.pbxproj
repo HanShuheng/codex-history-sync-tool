@@ -11,6 +11,7 @@
 		206F5C58A5EC304EB1923F26 /* BackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B09C4748F72F766987F0686C /* BackupService.swift */; };
 		33564312A4F7EED2D05FF928 /* WidgetSnapshotWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91CF7CDB4093D3B5703CB63 /* WidgetSnapshotWriter.swift */; };
 		39C8DB0B5DC3F494CDA50969 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 390570CB8DABCDB36005AFE2 /* MainView.swift */; };
+		3EB0E7ED1A26E64BEF3A4BF9 /* HistoryTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A61E3C75F663FF11A530481E /* HistoryTableView.swift */; };
 		445E1291E8F3837C9E758DA9 /* AccountStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F600C42AFE73F2991973D4C3 /* AccountStore.swift */; };
 		463FAAAA32D8DDFBED1EA281 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 034AAF92E1E1FBB15C3F46A7 /* Localizable.strings */; };
 		4736F1A69E0A8C9EB42E3C02 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BCA61945401643BB6660430 /* AppLanguage.swift */; };
@@ -68,6 +69,7 @@
 		9B1B2C1E7659125A41813E84 /* OAuthCallbackGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthCallbackGate.swift; sourceTree = "<group>"; };
 		9FB1D54157343928ED1AAD17 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		A26422CE5F7431ADA2E92F24 /* AppPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPaths.swift; sourceTree = "<group>"; };
+		A61E3C75F663FF11A530481E /* HistoryTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryTableView.swift; sourceTree = "<group>"; };
 		A838AD329F9595DB56BF6B03 /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		AACA3FAE4EB3F54275EF072C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		B09C4748F72F766987F0686C /* BackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupService.swift; sourceTree = "<group>"; };
@@ -118,6 +120,7 @@
 			children = (
 				52EB73E7AF434AC5B0840755 /* AccountsView.swift */,
 				78FC602CB62A5B95D1B872BF /* BackupView.swift */,
+				A61E3C75F663FF11A530481E /* HistoryTableView.swift */,
 				CAAA62D33251DAB1877C6DD8 /* HistoryView.swift */,
 				390570CB8DABCDB36005AFE2 /* MainView.swift */,
 				D03D784C8AB50CC8F69FB7CC /* SettingsView.swift */,
@@ -340,6 +343,7 @@
 				8AE4DCAC1F2C80434B8CBE36 /* CodexHistorySyncApp.swift in Sources */,
 				ED3380B10950A539046068AE /* CodexModelCatalog.swift in Sources */,
 				A338CC8678BA606C0C8457F6 /* HistoryService.swift in Sources */,
+				3EB0E7ED1A26E64BEF3A4BF9 /* HistoryTableView.swift in Sources */,
 				C48E9FA420FA9CAF2523D7DA /* HistoryView.swift in Sources */,
 				6C24957EDC61AC290BD72FC8 /* KeychainStore.swift in Sources */,
 				198DD861ADD1222F614BF189 /* L10n.swift in Sources */,
@@ -387,12 +391,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.1.1;
 				INFOPLIST_FILE = macos/Info.plist;
 				INFOPLIST_KEY_LSMinimumSystemVersion = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hanshuheng.CodexHistorySync;
 				SDKROOT = macosx;
 			};
@@ -403,12 +409,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.1.1;
 				INFOPLIST_FILE = macos/Info.plist;
 				INFOPLIST_KEY_LSMinimumSystemVersion = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hanshuheng.CodexHistorySync;
 				SDKROOT = macosx;
 			};

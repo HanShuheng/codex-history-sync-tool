@@ -20,6 +20,7 @@ struct AccountsView: View {
                 accountTable
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom) {
             Text(String(format: localization.text("accounts.count"), store.accounts.count))
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -126,20 +127,25 @@ struct AccountsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .width(min: 180, ideal: 240, max: 420)
             TableColumn(localization.text("accounts.column.plan")) { account in
                 Text(account.plan ?? localization.text("value.unknown"))
             }
+            .width(min: 90, ideal: 110, max: 180)
             TableColumn(localization.text("accounts.column.fiveHour")) { account in
                 usageText(account.usage?.primaryRemainPercent, reset: account.usage?.primaryResetsAt, tint: .green)
             }
+            .width(min: 150, ideal: 190, max: 260)
             TableColumn(localization.text("accounts.column.sevenDay")) { account in
                 usageText(account.usage?.secondaryRemainPercent, reset: account.usage?.secondaryResetsAt, tint: .blue)
             }
+            .width(min: 150, ideal: 190, max: 260)
             TableColumn(localization.text("accounts.column.status")) { account in
                 Text(account.status == "active" ? localization.text("accounts.active") : account.status)
                     .foregroundStyle(account.status == "active" ? .green : .orange)
                     .help(account.lastError ?? "")
             }
+            .width(min: 80, ideal: 100, max: 160)
             TableColumn(localization.text("accounts.column.action")) { account in
                 Button {
                     pendingSwitch = account
@@ -149,7 +155,9 @@ struct AccountsView: View {
                 .buttonStyle(.bordered)
                 .disabled(account.isCurrent)
             }
+            .width(min: 90, ideal: 110, max: 160)
         }
+        .frame(minWidth: 960, maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func usageText(_ percent: Double?, reset: Date?, tint: Color) -> some View {

@@ -25,6 +25,17 @@ struct MainView: View {
                 .navigationTitle(detailTitle)
         }
         .frame(minWidth: 960, minHeight: 620)
+        .toolbar {
+            ToolbarItem {
+                Picker(localization.text("settings.language"), selection: $localization.language) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+                .help(localization.text("settings.language"))
+            }
+        }
         .overlay(alignment: .topTrailing) {
             if store.busy || accountStore.busy {
                 ProgressView()
