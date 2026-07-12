@@ -125,7 +125,7 @@ struct AccountsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }.width(min: 220, ideal: 280)
+            }
             TableColumn(localization.text("accounts.column.plan")) { account in
                 Text(account.plan ?? localization.text("value.unknown"))
             }

@@ -1,5 +1,13 @@
 import SwiftUI
 
+private struct SelectionColumnCenterKey: PreferenceKey {
+    static var defaultValue: CGFloat? = nil
+
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        if value == nil { value = nextValue() }
+    }
+}
+
 struct HistoryView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @ObservedObject var store: AppStore
@@ -80,11 +88,6 @@ struct HistoryView: View {
                     .frame(maxWidth: 320)
                 Toggle(localization.text("history.unsyncedOnly"), isOn: $currentOnly)
                     .toggleStyle(.switch)
-                Button(action: toggleAll) {
-                    Label(selectionActionTitle, systemImage: selectionIcon)
-                }
-                .buttonStyle(.bordered)
-                .disabled(threads.isEmpty)
                 Spacer()
             }
             Text(localization.text("history.syncHint"))
@@ -99,7 +102,15 @@ struct HistoryView: View {
         Table(threads) {
             TableColumn("") { item in
                 Toggle("", isOn: selectionBinding(for: item)).labelsHidden()
-            }.width(30)
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: SelectionColumnCenterKey.self,
+                                value: proxy.frame(in: .global).midX
+                            )
+                        }
+                    }
+            }
             TableColumn(localization.text("table.task")) { item in
                 HStack {
                     if item.pinned { Image(systemName: "pin.fill").foregroundStyle(.orange) }
@@ -117,10 +128,29 @@ struct HistoryView: View {
             TableColumn(localization.text("table.status")) { item in
                 Text(localization.text(item.isCurrent ? "status.current" : "status.pending"))
                     .foregroundStyle(item.isCurrent ? .green : .orange)
-            }.width(90)
+            }
             TableColumn(localization.text("table.updated")) { item in
                 Text(localization.date(item.updatedAt))
-            }.width(170)
+            }
+        }
+        .overlayPreferenceValue(SelectionColumnCenterKey.self) { center in
+            GeometryReader { proxy in
+                if let center {
+                    Button(action: toggleAll) {
+                        Image(systemName: selectionIcon)
+                    }
+                    .buttonStyle(.borderless)
+                    .frame(width: 30, height: 24)
+                    .position(
+                        x: center - proxy.frame(in: .global).minX,
+                        y: 12
+                    )
+                    .contentShape(Rectangle())
+                    .disabled(threads.isEmpty)
+                    .help(selectionActionTitle)
+                    .accessibilityLabel(selectionActionTitle)
+                }
+            }
         }
     }
 
