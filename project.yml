@@ -1,0 +1,31 @@
+name: CodexHistorySync
+options:
+  deploymentTarget:
+    macOS: "13.0"
+targets:
+  CodexHistorySync:
+    type: application
+    platform: macOS
+    info:
+      path: macos/Info.plist
+    sources:
+      - path: macos
+        excludes:
+          - "CodexHistorySync.entitlements"
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.hanshuheng.CodexHistorySync
+      MARKETING_VERSION: 0.1.1
+      CURRENT_PROJECT_VERSION: 0.1.1
+      INFOPLIST_KEY_LSMinimumSystemVersion: "13.0"
+  CodexQuotaWidget:
+    type: app-extension
+    platform: macOS
+    info:
+      path: widget/Info.plist
+    sources:
+      - path: widget
+      - path: macos/Support/QuotaWidgetSnapshot.swift
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.hanshuheng.CodexHistorySync.CodexQuotaWidget
+      CODE_SIGN_ENTITLEMENTS: widget/CodexQuotaWidget.entitlements
+      INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.widgetkit-extension

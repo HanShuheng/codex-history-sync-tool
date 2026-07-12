@@ -4,7 +4,7 @@ struct MainView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store = AppStore()
-    @StateObject private var accountStore = AccountStore()
+    @ObservedObject var accountStore: AccountStore
     @State private var workspace = Workspace.history
     @State private var project = ""
 

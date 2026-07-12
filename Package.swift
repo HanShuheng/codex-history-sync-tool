@@ -10,6 +10,7 @@ let package = Package(
         .executableTarget(
             name: "CodexHistorySync",
             path: "macos",
+            exclude: ["CodexHistorySync.entitlements", "Info.plist"],
             resources: [.process("Resources")]
         )
     ]

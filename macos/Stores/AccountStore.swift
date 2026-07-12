@@ -16,6 +16,7 @@ final class AccountStore: ObservableObject {
             accounts = try service.load()
             autoSyncAfterAccountSwitch = try service.loadAutoSyncAfterAccountSwitch()
             markCurrent()
+            WidgetSnapshotStore.save(accounts: accounts)
         }
         catch let caught { error = caught.localizedDescription }
     }
@@ -42,6 +43,14 @@ final class AccountStore: ObservableObject {
         execute { for id in ids { await self.refresh(id) } }
     }
 
+    func refreshCurrent() {
+        guard let account = accounts.first(where: \.isCurrent) ?? accounts.first else {
+            message = "暂无可刷新的账号。"
+            return
+        }
+        execute { await self.refresh(account.id) }
+    }
+
     func setAutoSyncAfterAccountSwitch(_ enabled: Bool) {
         autoSyncAfterAccountSwitch = enabled
         do { try service.saveAutoSyncAfterAccountSwitch(enabled) }
@@ -65,6 +74,7 @@ final class AccountStore: ObservableObject {
         execute {
             let switched = try await self.service.switchTo(account)
             self.accounts = self.accounts.map { var item = $0; item = item.id == account.id ? switched : item; item.isCurrent = item.id == account.id; return item }
+            WidgetSnapshotStore.save(accounts: self.accounts)
             try self.service.save(self.accounts)
             try self.service.saveAutoSyncAfterAccountSwitch(autoSync)
             self.autoSyncAfterAccountSwitch = autoSync
@@ -89,6 +99,7 @@ final class AccountStore: ObservableObject {
 
     private func upsert(_ account: AccountRecord) {
         if let index = accounts.firstIndex(where: { $0.id == account.id }) { accounts[index] = account } else { accounts.append(account) }
+        WidgetSnapshotStore.save(accounts: accounts)
         do { try service.save(accounts) } catch let caught { error = caught.localizedDescription }
     }
 
