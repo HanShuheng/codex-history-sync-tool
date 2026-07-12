@@ -3,11 +3,14 @@ import Foundation
 @MainActor
 final class AccountStore: ObservableObject {
     @Published var accounts: [AccountRecord] = []
-    @Published var selectedIDs = Set<String>()
+    @Published var selectedIDs = UIStateStore.shared.accountSelectedIDs {
+        didSet { UIStateStore.shared.accountSelectedIDs = selectedIDs }
+    }
     @Published var busy = false
     @Published var message: String?
     @Published var error: String?
     @Published var autoSyncAfterAccountSwitch = false
+    @Published var autoRestartCodexAfterAccountSwitch = false
 
     let service = AccountService()
 
@@ -15,6 +18,7 @@ final class AccountStore: ObservableObject {
         do {
             accounts = try service.load()
             autoSyncAfterAccountSwitch = try service.loadAutoSyncAfterAccountSwitch()
+            autoRestartCodexAfterAccountSwitch = try service.loadAutoRestartCodexAfterAccountSwitch()
             markCurrent()
             WidgetSnapshotStore.save(accounts: accounts)
         }
@@ -51,9 +55,20 @@ final class AccountStore: ObservableObject {
         execute { await self.refresh(account.id) }
     }
 
+    func refreshWhenAccountsPageIsShown() {
+        guard !busy else { return }
+        refreshCurrent()
+    }
+
     func setAutoSyncAfterAccountSwitch(_ enabled: Bool) {
         autoSyncAfterAccountSwitch = enabled
         do { try service.saveAutoSyncAfterAccountSwitch(enabled) }
+        catch let caught { error = caught.localizedDescription }
+    }
+
+    func setAutoRestartCodexAfterAccountSwitch(_ enabled: Bool) {
+        autoRestartCodexAfterAccountSwitch = enabled
+        do { try service.saveAutoRestartCodexAfterAccountSwitch(enabled) }
         catch let caught { error = caught.localizedDescription }
     }
 
@@ -70,14 +85,23 @@ final class AccountStore: ObservableObject {
         }
     }
 
-    func switchTo(_ account: AccountRecord, autoSync: Bool) {
+    func switchTo(_ account: AccountRecord, autoSync: Bool, autoRestartCodex: Bool) {
         execute {
             let switched = try await self.service.switchTo(account)
-            self.accounts = self.accounts.map { var item = $0; item = item.id == account.id ? switched : item; item.isCurrent = item.id == account.id; return item }
+            var refreshed = switched
+            var refreshMessage = ""
+            do {
+                refreshed = try await self.service.refresh(switched)
+            } catch {
+                refreshMessage = "额度刷新失败，请稍后手动刷新。"
+            }
+            self.accounts = self.accounts.map { var item = $0; item = item.id == account.id ? refreshed : item; item.isCurrent = item.id == account.id; return item }
             WidgetSnapshotStore.save(accounts: self.accounts)
             try self.service.save(self.accounts)
             try self.service.saveAutoSyncAfterAccountSwitch(autoSync)
             self.autoSyncAfterAccountSwitch = autoSync
+            try self.service.saveAutoRestartCodexAfterAccountSwitch(autoRestartCodex)
+            self.autoRestartCodexAfterAccountSwitch = autoRestartCodex
             var syncMessage = ""
             if autoSync {
                 do {
@@ -87,7 +111,17 @@ final class AccountStore: ObservableObject {
                     syncMessage = "自动同步全部历史记录失败，请到历史记录页面手动同步。"
                 }
             }
-            self.message = "已切换到 \(account.displayName)。\(syncMessage)请重启 Codex 使新登录态生效。"
+            var restartMessage = ""
+            if autoRestartCodex {
+                do {
+                    restartMessage = try await self.service.restartCodexIfRunning() ? "Codex 已自动重启。" : "Codex 当前未运行，未执行重启。"
+                } catch {
+                    restartMessage = "Codex 自动重启失败，请手动重启。"
+                }
+            } else {
+                restartMessage = "请重启 Codex 使新登录态生效。"
+            }
+            self.message = "已切换到 \(account.displayName)。\(refreshMessage)\(syncMessage)\(restartMessage)"
         }
     }
 

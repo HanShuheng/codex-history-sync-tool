@@ -29,8 +29,39 @@ struct AccountService: Sendable {
         try localConfig.load().autoSyncAfterAccountSwitch
     }
 
+    func loadAutoRestartCodexAfterAccountSwitch() throws -> Bool {
+        try localConfig.load().autoRestartCodexAfterAccountSwitch
+    }
+
     func saveAutoSyncAfterAccountSwitch(_ enabled: Bool) throws {
         try localConfig.saveAutoSyncAfterAccountSwitch(enabled)
+    }
+
+    func saveAutoRestartCodexAfterAccountSwitch(_ enabled: Bool) throws {
+        try localConfig.saveAutoRestartCodexAfterAccountSwitch(enabled)
+    }
+
+    func restartCodexIfRunning() async throws -> Bool {
+        guard let application = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == "com.openai.codex" }) else {
+            return false
+        }
+        guard let bundleURL = application.bundleURL else { return false }
+        application.terminate()
+        for _ in 0..<50 {
+            if application.isTerminated { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        guard application.isTerminated else {
+            throw AccountServiceError.credentialFile("Codex 仍在运行，无法自动重启，请手动重启。")
+        }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let configuration = NSWorkspace.OpenConfiguration()
+            NSWorkspace.shared.openApplication(at: bundleURL, configuration: configuration) { _, error in
+                if let error { continuation.resume(throwing: error) }
+                else { continuation.resume() }
+            }
+        }
+        return true
     }
 
     func syncAllHistory() throws -> OperationResult {

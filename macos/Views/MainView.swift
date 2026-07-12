@@ -5,8 +5,8 @@ struct MainView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store = AppStore()
     @ObservedObject var accountStore: AccountStore
-    @State private var workspace = Workspace.history
-    @State private var project = ""
+    @State private var workspace = Workspace(rawValue: UIStateStore.shared.workspace) ?? .history
+    @State private var project = UIStateStore.shared.project
 
     private var detailTitle: String {
         switch workspace {
@@ -52,6 +52,8 @@ struct MainView: View {
         .onChange(of: scenePhase) { phase in
             if phase == .background { store.persistSelections(immediately: true) }
         }
+        .onChange(of: workspace) { value in UIStateStore.shared.workspace = value.rawValue }
+        .onChange(of: project) { value in UIStateStore.shared.project = value }
         .onDisappear { store.persistSelections(immediately: true) }
         .alert(localization.text("error.title"), isPresented: Binding(get: { store.errorKey != nil }, set: { if !$0 { store.errorKey = nil } })) {
             Button(localization.text("common.ok")) { store.errorKey = nil }

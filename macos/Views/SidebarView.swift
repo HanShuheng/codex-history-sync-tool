@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum Workspace: Hashable {
+enum Workspace: String, Hashable {
     case history
     case backups
     case accounts

@@ -95,8 +95,8 @@ struct HistoryTableView: NSViewRepresentable {
                 column.title = definition.1
                 if isNewColumn {
                     column.minWidth = definition.2
-                    column.width = definition.3
                     column.maxWidth = definition.4
+                    column.width = UIStateStore.shared.historyColumnWidths[definition.0] ?? definition.3
                 }
                 column.maxWidth = definition.4
                 column.resizingMask = .userResizingMask
@@ -140,6 +140,10 @@ struct HistoryTableView: NSViewRepresentable {
         }
 
         func tableViewColumnDidResize(_ notification: Notification) {
+            guard let tableView else { return }
+            UIStateStore.shared.historyColumnWidths = Dictionary(uniqueKeysWithValues: tableView.tableColumns.map {
+                ($0.identifier.rawValue, $0.width)
+            })
             updateDocumentFrame()
         }
 

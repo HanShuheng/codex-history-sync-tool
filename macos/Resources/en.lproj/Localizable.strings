@@ -36,6 +36,8 @@
 "accounts.switchSheetMessage" = "This account will become the active Codex login profile.";
 "accounts.autoSyncAfterSwitch" = "Automatically sync all history after switching";
 "accounts.autoSyncHelp" = "When enabled, all history is synced after a successful switch; off by default.";
+"accounts.autoRestartCodexAfterSwitch" = "Automatically restart Codex after switching";
+"accounts.autoRestartCodexHelp" = "When enabled, a running Codex app is gracefully restarted after a successful switch; off by default.";
 "accounts.done" = "Account operation complete";
 "history.all" = "All History";
 "history.count" = "%d conversations";

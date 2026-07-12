@@ -4,8 +4,8 @@ struct HistoryView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @ObservedObject var store: AppStore
     let project: String
-    @State private var search = ""
-    @State private var currentOnly = false
+    @State private var search = UIStateStore.shared.historySearch
+    @State private var currentOnly = UIStateStore.shared.historyCurrentOnly
     @State private var showSyncConfirmation = false
 
     private var threads: [ThreadItem] {
@@ -36,6 +36,8 @@ struct HistoryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onChange(of: search) { value in UIStateStore.shared.historySearch = value }
+        .onChange(of: currentOnly) { value in UIStateStore.shared.historyCurrentOnly = value }
         .safeAreaInset(edge: .bottom) {
             HStack {
                 Text(projectTitle).font(.headline)
