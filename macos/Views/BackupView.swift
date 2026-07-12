@@ -74,14 +74,14 @@ struct BackupView: View {
         Table(store.backups?.backups ?? []) {
             TableColumn("") { item in
                 Toggle("", isOn: binding(for: item)).labelsHidden()
-            }.width(30)
+            }
             TableColumn(localization.text("backup.column.name"), value: \.name)
             TableColumn(localization.text("backup.column.time")) { item in
                 Text(localization.date(item.modifiedAt))
-            }.width(170)
+            }
             TableColumn(localization.text("backup.column.size")) { item in
                 Text(localization.bytes(Int64(item.sizeBytes)))
-            }.width(100)
+            }
         }
     }
 
