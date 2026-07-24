@@ -15,8 +15,8 @@ targets:
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.hanshuheng.CodexHistorySync
       CODE_SIGN_ENTITLEMENTS: macos/CodexHistorySync.entitlements
-      MARKETING_VERSION: 0.1.3
-      CURRENT_PROJECT_VERSION: 0.1.3
+      MARKETING_VERSION: 0.1.4
+      CURRENT_PROJECT_VERSION: 0.1.4
       INFOPLIST_KEY_LSMinimumSystemVersion: "13.0"
   CodexQuotaWidget:
     type: app-extension
