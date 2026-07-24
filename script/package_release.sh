@@ -64,9 +64,9 @@ done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then
-  codesign --force --sign - "$APP"
+  codesign --force --entitlements "$ROOT/macos/CodexHistorySync.entitlements" --sign - "$APP"
 else
-  codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP"
+  codesign --force --options runtime --timestamp --entitlements "$ROOT/macos/CodexHistorySync.entitlements" --sign "$SIGNING_IDENTITY" "$APP"
 fi
 codesign --verify --deep --strict --verbose=2 "$APP"
 DMG_WORK="$(mktemp -d)"

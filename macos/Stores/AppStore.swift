@@ -10,8 +10,12 @@ final class AppStore: ObservableObject {
     }
     @Published var busy = false
     @Published var errorKey: String?
-    let client = BackendClient()
+    let client: BackendClient
     private var selectionSaveTask: Task<Void, Never>?
+
+    init(codexHome: URL) {
+        client = BackendClient(codexHome: codexHome)
+    }
 
     func load() { execute { [self] in
         async let threadsRequest = client.threads(), backupsRequest = client.backups()

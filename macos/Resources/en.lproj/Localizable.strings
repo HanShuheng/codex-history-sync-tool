@@ -1,4 +1,7 @@
 "app.name" = "History Manager";
+"access.title" = "Allow Access to Codex Data";
+"access.message" = "Choose the Codex data folder ~/.codex the first time. The permission is saved on this Mac for future launches.";
+"access.choose" = "Choose ~/.codex";
 "language.system" = "System Default";
 "settings.language" = "Language";
 "nav.history" = "History";

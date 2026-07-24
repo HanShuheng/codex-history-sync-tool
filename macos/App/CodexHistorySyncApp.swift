@@ -33,11 +33,18 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 struct CodexHistorySyncApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var localization = LocalizationStore()
-    @StateObject private var accountStore = AccountStore()
+    @StateObject private var codexAccess = CodexAccessStore()
 
     var body: some Scene {
         WindowGroup {
-            MainView(accountStore: accountStore).environmentObject(localization)
+            Group {
+                if let codexHome = codexAccess.codexHome {
+                    MainView(codexHome: codexHome)
+                } else {
+                    CodexAccessView(access: codexAccess)
+                }
+            }
+            .environmentObject(localization)
         }
         .defaultSize(width: 1200, height: 800)
         Settings { SettingsView().environmentObject(localization) }

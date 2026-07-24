@@ -3,10 +3,15 @@ import SwiftUI
 struct MainView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var store = AppStore()
-    @ObservedObject var accountStore: AccountStore
+    @StateObject private var store: AppStore
+    @StateObject private var accountStore: AccountStore
     @State private var workspace = Workspace(rawValue: UIStateStore.shared.workspace) ?? .history
     @State private var project = UIStateStore.shared.project
+
+    init(codexHome: URL) {
+        _store = StateObject(wrappedValue: AppStore(codexHome: codexHome))
+        _accountStore = StateObject(wrappedValue: AccountStore(codexHome: codexHome))
+    }
 
     private var detailTitle: String {
         switch workspace {

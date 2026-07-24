@@ -60,7 +60,7 @@ for size in 16 32 128 256 512; do
   sips -z "$double" "$double" "$ICON_SOURCE" --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
-codesign --force --sign - "$APP"
+codesign --force --entitlements "$ROOT/macos/CodexHistorySync.entitlements" --sign - "$APP"
 fi
 
 case "$MODE" in

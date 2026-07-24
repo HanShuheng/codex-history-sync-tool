@@ -1,4 +1,7 @@
 "app.name" = "历史管理器";
+"access.title" = "授权访问 Codex 数据";
+"access.message" = "首次使用请选择 Codex 数据目录 ~/.codex。授权会保存在本机，之后启动不会重复询问。";
+"access.choose" = "选择 ~/.codex";
 "language.system" = "跟随系统";
 "settings.language" = "语言";
 "nav.history" = "历史记录";

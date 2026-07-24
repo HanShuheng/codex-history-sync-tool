@@ -12,7 +12,11 @@ final class AccountStore: ObservableObject {
     @Published var autoSyncAfterAccountSwitch = false
     @Published var autoRestartCodexAfterAccountSwitch = false
 
-    let service = AccountService()
+    let service: AccountService
+
+    init(codexHome: URL) {
+        service = AccountService(paths: AppPaths(codexHome: codexHome))
+    }
 
     func load() {
         do {
