@@ -4,23 +4,29 @@ set -euo pipefail
 MODE="${1:-run}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="CodexHistorySync"
-APP_VERSION="0.1.1"
+APP_VERSION="0.1.3"
 APP="$ROOT/dist/$APP_NAME.app"
 BIN="$APP/Contents/MacOS/$APP_NAME"
 
 pkill -x "$APP_NAME" >/dev/null 2>&1 || true
-cd "$ROOT"
-swift build
-rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
-cp "$(swift build --show-bin-path)/$APP_NAME" "$BIN"
-RESOURCE_BUNDLE="$(swift build --show-bin-path)/${APP_NAME}_${APP_NAME}.bundle"
-if [[ -d "$RESOURCE_BUNDLE" ]]; then
-  rm -rf "$APP/Contents/Resources"
-  mkdir -p "$APP/Contents/Resources"
-  cp -R "$RESOURCE_BUNDLE" "$APP/Contents/Resources/"
+NEEDS_BUILD=true
+if [[ -x "$BIN" ]] && ! find "$ROOT/macos" "$ROOT/Package.swift" "$ROOT/project.yml" -type f -newer "$BIN" -print -quit | grep -q .; then
+  NEEDS_BUILD=false
 fi
-chmod +x "$BIN"
+
+if [[ "$NEEDS_BUILD" == true ]]; then
+  cd "$ROOT"
+  swift build
+  rm -rf "$APP"
+  mkdir -p "$APP/Contents/MacOS"
+  cp "$(swift build --show-bin-path)/$APP_NAME" "$BIN"
+  RESOURCE_BUNDLE="$(swift build --show-bin-path)/${APP_NAME}_${APP_NAME}.bundle"
+  if [[ -d "$RESOURCE_BUNDLE" ]]; then
+    rm -rf "$APP/Contents/Resources"
+    mkdir -p "$APP/Contents/Resources"
+    cp -R "$RESOURCE_BUNDLE" "$APP/Contents/Resources/"
+  fi
+  chmod +x "$BIN"
 plutil -create xml1 "$APP/Contents/Info.plist"
 add_plist() { /usr/libexec/PlistBuddy -c "$1" "$APP/Contents/Info.plist"; }
 add_plist "Add :CFBundleExecutable string $APP_NAME"
@@ -55,6 +61,7 @@ for size in 16 32 128 256 512; do
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 codesign --force --sign - "$APP"
+fi
 
 case "$MODE" in
   run) open -n "$APP" ;;

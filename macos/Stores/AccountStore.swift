@@ -55,11 +55,6 @@ final class AccountStore: ObservableObject {
         execute { await self.refresh(account.id) }
     }
 
-    func refreshWhenAccountsPageIsShown() {
-        guard !busy else { return }
-        refreshCurrent()
-    }
-
     func setAutoSyncAfterAccountSwitch(_ enabled: Bool) {
         autoSyncAfterAccountSwitch = enabled
         do { try service.saveAutoSyncAfterAccountSwitch(enabled) }

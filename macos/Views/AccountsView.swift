@@ -2,7 +2,6 @@ import SwiftUI
 
 struct AccountsView: View {
     @EnvironmentObject private var localization: LocalizationStore
-    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject var store: AccountStore
     @State private var showImport = false
     @State private var pendingSwitch: AccountRecord?
@@ -22,10 +21,6 @@ struct AccountsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear { store.refreshWhenAccountsPageIsShown() }
-        .onChange(of: scenePhase) { phase in
-            if phase == .active { store.refreshWhenAccountsPageIsShown() }
-        }
         .safeAreaInset(edge: .bottom) {
             Text(String(format: localization.text("accounts.count"), store.accounts.count))
                 .frame(maxWidth: .infinity, alignment: .leading)

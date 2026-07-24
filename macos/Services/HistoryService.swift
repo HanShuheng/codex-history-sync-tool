@@ -65,8 +65,13 @@ struct HistoryService: Sendable {
             bindings: bindings
         )
         let sessions = SessionService(paths: paths)
-        let sessionCount = try sessions.sync(ids: activeIDs, provider: provider, model: config.model)
-        try sessions.rebuildIndex(using: database)
+        let sessionCount = try sessions.sync(
+            ids: activeIDs,
+            provider: provider,
+            model: config.model,
+            database: database,
+            columns: columns
+        )
         _ = try saveSelections(activeIDs)
         return OperationResult(updatedRows: updated, updatedSessionFiles: sessionCount, selectedCount: activeIDs.count)
     }
