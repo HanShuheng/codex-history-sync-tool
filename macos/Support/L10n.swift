@@ -1,11 +1,20 @@
 import Foundation
 
 enum L10n {
-    #if SWIFT_PACKAGE
-    private static let resourceBundle = Bundle.module
-    #else
-    private static let resourceBundle = Bundle.main
-    #endif
+    private static let resourceBundle: Bundle = {
+        #if SWIFT_PACKAGE
+        let name = "CodexHistorySync_CodexHistorySync"
+        if let url = Bundle.main.url(forResource: name, withExtension: "bundle"), let bundle = Bundle(url: url) {
+            return bundle
+        }
+        let resourceURL = Bundle.main.bundleURL
+            .appendingPathComponent("Contents", isDirectory: true)
+            .appendingPathComponent("Resources", isDirectory: true)
+            .appendingPathComponent("\(name).bundle", isDirectory: true)
+        if let bundle = Bundle(url: resourceURL) { return bundle }
+        #endif
+        return Bundle.main
+    }()
 
     private static let bundles: [AppLanguage: Bundle] = [AppLanguage.english, .simplifiedChinese].reduce(into: [:]) { result, language in
         guard let path = resourceBundle.path(forResource: language.rawValue.lowercased(), ofType: "lproj"),

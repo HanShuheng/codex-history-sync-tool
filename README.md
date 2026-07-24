@@ -35,7 +35,7 @@ A native macOS, backup-first utility for making Codex Desktop conversations visi
 
 ## Download and Use
 
-1. Download `CodexHistorySync.dmg` from [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases), version `v0.1.4`.
+1. Download `CodexHistorySync.dmg` from [GitHub Releases](https://github.com/HanShuheng/codex-history-sync-tool/releases), version `v0.1.5`.
 2. Open the disk image and move `CodexHistorySync.app` to `Applications`.
 3. Quit or pause active Codex tasks before changing history metadata.
 4. Open the app, select the conversations you want, and click **Sync Selected**.
