@@ -392,14 +392,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				CODE_SIGN_ENTITLEMENTS = macos/CodexHistorySync.entitlements;
-				CURRENT_PROJECT_VERSION = 0.1.5;
+				CURRENT_PROJECT_VERSION = 0.1.6;
 				INFOPLIST_FILE = macos/Info.plist;
 				INFOPLIST_KEY_LSMinimumSystemVersion = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.5;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hanshuheng.CodexHistorySync;
 				SDKROOT = macosx;
 			};
@@ -411,14 +411,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				CODE_SIGN_ENTITLEMENTS = macos/CodexHistorySync.entitlements;
-				CURRENT_PROJECT_VERSION = 0.1.5;
+				CURRENT_PROJECT_VERSION = 0.1.6;
 				INFOPLIST_FILE = macos/Info.plist;
 				INFOPLIST_KEY_LSMinimumSystemVersion = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.5;
+				MARKETING_VERSION = 0.1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hanshuheng.CodexHistorySync;
 				SDKROOT = macosx;
 			};

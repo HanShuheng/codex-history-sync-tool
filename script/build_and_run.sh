@@ -4,7 +4,7 @@ set -euo pipefail
 MODE="${1:-run}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="CodexHistorySync"
-APP_VERSION="0.1.5"
+APP_VERSION="0.1.6"
 APP="$ROOT/dist/$APP_NAME.app"
 BIN="$APP/Contents/MacOS/$APP_NAME"
 

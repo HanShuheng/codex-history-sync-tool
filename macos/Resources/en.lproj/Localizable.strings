@@ -1,7 +1,11 @@
 "app.name" = "History Manager";
 "access.title" = "Allow Access to Codex Data";
-"access.message" = "Choose the Codex data folder ~/.codex the first time. The permission is saved on this Mac for future launches.";
-"access.choose" = "Choose ~/.codex";
+"access.message" = "The default folder is ~/.codex. After allowing access once, the app uses it directly.";
+"access.choose" = "Authorize Default Folder Again";
+"access.confirmTitle" = "Allow Access to Codex Data?";
+"access.confirmMessage" = "The app will access history and account settings in ~/.codex.";
+"access.allow" = "Allow";
+"access.deny" = "Don’t Allow";
 "language.system" = "System Default";
 "settings.language" = "Language";
 "nav.history" = "History";

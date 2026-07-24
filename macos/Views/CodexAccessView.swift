@@ -3,6 +3,7 @@ import SwiftUI
 struct CodexAccessView: View {
     @EnvironmentObject private var localization: LocalizationStore
     @ObservedObject var access: CodexAccessStore
+    @State private var showAuthorization = true
 
     var body: some View {
         VStack(spacing: 16) {
@@ -15,12 +16,20 @@ struct CodexAccessView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 420)
             Button(localization.text("access.choose")) {
-                access.requestAccess()
+                showAuthorization = true
             }
             .buttonStyle(.borderedProminent)
         }
         .frame(minWidth: 640, minHeight: 420)
         .padding(40)
+        .alert(localization.text("access.confirmTitle"), isPresented: $showAuthorization) {
+            Button(localization.text("access.allow")) {
+                access.authorizeDefaultAccess()
+            }
+            Button(localization.text("access.deny"), role: .cancel) {}
+        } message: {
+            Text(localization.text("access.confirmMessage"))
+        }
         .alert(localization.text("error.title"), isPresented: Binding(
             get: { access.error != nil },
             set: { if !$0 { access.error = nil } }
